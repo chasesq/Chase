@@ -23,9 +23,12 @@ export async function sendAdminTransferAlert(options: {
   userId: string
   userPhone?: string
   userEmail?: string
+  pushSubscription?: any
   recipientName: string
   amount: number
   accountName: string
+  newBalance?: number
+  reference?: string
   transferId: string
   broadcastToAllDevices?: boolean
 }): Promise<{ success: boolean; results: any[] }> {
@@ -33,9 +36,12 @@ export async function sendAdminTransferAlert(options: {
     userId,
     userPhone,
     userEmail,
+    pushSubscription,
     recipientName,
     amount,
     accountName,
+    newBalance,
+    reference,
     transferId,
     broadcastToAllDevices = true,
   } = options
@@ -58,6 +64,8 @@ export async function sendAdminTransferAlert(options: {
         recipientName,
         amount,
         accountName,
+        newBalance,
+        reference,
         transferId,
         broadcastToAllDevices,
         userId,
@@ -66,13 +74,16 @@ export async function sendAdminTransferAlert(options: {
     }
 
     // Push Notification - Broadcast to all devices
-    if (broadcastToAllDevices) {
+    if (broadcastToAllDevices || pushSubscription) {
       const pushResult = await sendTransferPushNotification({
         userId,
         recipientName,
         amount,
         accountName,
+        newBalance,
+        reference,
         transferId,
+        pushSubscription,
       })
       results.push(pushResult)
     }
@@ -132,14 +143,20 @@ async function sendTransferSMS(options: {
   recipientName: string
   amount: number
   accountName: string
+  newBalance?: number
+  reference?: string
   transferId: string
   broadcastToAllDevices: boolean
   userId: string
 }): Promise<any> {
   try {
-    const { phone, recipientName, amount, accountName, transferId, broadcastToAllDevices, userId } = options
+    const { phone, recipientName, amount, accountName, newBalance, reference, transferId, broadcastToAllDevices, userId } = options
 
-    const message = `Chase Alert: $${amount.toFixed(2)} has been added to your ${accountName} by admin. Reference: ${transferId.slice(0, 8)}`
+    const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+    const formattedBalance = newBalance ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(newBalance) : ''
+    const ref = reference || `ADM-${transferId.slice(0, 8).toUpperCase()}`
+    
+    const message = `Chase Alert: ${formattedAmount} has been credited to your ${accountName}. ${newBalance ? `New balance: ${formattedBalance}. ` : ''}Ref: ${ref}`
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const response = await fetch(`${baseUrl}/api/notifications/sms`, {
@@ -194,10 +211,17 @@ async function sendTransferPushNotification(options: {
   recipientName: string
   amount: number
   accountName: string
+  newBalance?: number
+  reference?: string
   transferId: string
+  pushSubscription?: any
 }): Promise<any> {
   try {
-    const { userId, recipientName, amount, accountName, transferId } = options
+    const { userId, recipientName, amount, accountName, newBalance, reference, transferId, pushSubscription } = options
+
+    const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+    const formattedBalance = newBalance ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(newBalance) : ''
+    const ref = reference || `ADM-${transferId.slice(0, 8).toUpperCase()}`
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     const response = await fetch(`${baseUrl}/api/notifications/push`, {
@@ -208,14 +232,17 @@ async function sendTransferPushNotification(options: {
       },
       body: JSON.stringify({
         userId,
-        title: 'Funds Received',
-        message: `$${amount.toFixed(2)} added to ${accountName}`,
+        title: `Credit Alert: ${formattedAmount}`,
+        message: `${formattedAmount} credited to ${accountName}. ${newBalance ? `Balance: ${formattedBalance}` : ''}`,
+        pushSubscription,
         data: {
-          type: 'admin_transfer',
+          type: 'credit',
           transferId,
           amount,
+          newBalance,
           accountName,
           recipientName,
+          reference: ref,
           timestamp: new Date().toISOString(),
         },
         broadcastToAllDevices: true,

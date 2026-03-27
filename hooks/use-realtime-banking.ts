@@ -180,6 +180,43 @@ export function useRealTimeBanking(userId: string | null) {
         },
         (payload) => {
           console.log('[v0] Notification received:', payload)
+          
+          // Show browser push notification for credit/debit alerts
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const notification = payload.new as RealtimeNotification
+            const isTransactionAlert = notification.type === 'credit' || notification.type === 'debit' || notification.type === 'transaction'
+            
+            if (isTransactionAlert && typeof window !== 'undefined' && 'Notification' in window) {
+              // Request permission if needed
+              if (Notification.permission === 'granted') {
+                const browserNotification = new Notification(notification.title, {
+                  body: notification.message,
+                  icon: '/chase-icon.png',
+                  badge: '/chase-badge.png',
+                  tag: notification.id,
+                  requireInteraction: true,
+                  vibrate: [200, 100, 200],
+                })
+                
+                browserNotification.onclick = () => {
+                  window.focus()
+                  browserNotification.close()
+                }
+                
+                console.log('[v0] Browser notification shown:', notification.title)
+              } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then((permission) => {
+                  if (permission === 'granted') {
+                    new Notification(notification.title, {
+                      body: notification.message,
+                      icon: '/chase-icon.png',
+                    })
+                  }
+                })
+              }
+            }
+          }
+          
           setNotifications((prev) => {
             const updated = [...prev]
             const index = updated.findIndex((n) => n.id === payload.new.id)

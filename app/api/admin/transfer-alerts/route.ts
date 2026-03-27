@@ -11,9 +11,12 @@ export async function POST(request: NextRequest) {
       userId,
       userPhone,
       userEmail,
+      pushSubscription,
       recipientName,
       amount,
       accountName,
+      newBalance,
+      reference,
       transferId,
       broadcastToAllDevices,
     } = await request.json()
@@ -32,14 +35,17 @@ export async function POST(request: NextRequest) {
       transferId,
     })
 
-    // Send multi-channel alerts
+    // Send multi-channel alerts (SMS, Push, Email)
     const { success, results } = await sendAdminTransferAlert({
       userId,
       userPhone,
       userEmail,
+      pushSubscription,
       recipientName: recipientName || 'Chase Bank',
       amount,
       accountName,
+      newBalance,
+      reference,
       transferId,
       broadcastToAllDevices: broadcastToAllDevices !== false,
     })

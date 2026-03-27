@@ -70,16 +70,18 @@ export async function POST(request: NextRequest) {
 
       // Create admin transfer record
       const newTransferId = crypto.randomUUID()
+      const reference = `ADM-${newTransferId.slice(0, 8).toUpperCase()}`
       const { data: transfer, error: transferError } = await supabase
         .from('admin_transfers')
         .insert([
           {
             id: newTransferId,
             admin_id: adminId,
-            user_id: toUserId,
-            account_id: toAccountId,
+            recipient_user_id: toUserId,
+            recipient_account_id: toAccountId,
             amount,
             description: description || `Admin credit - ${new Date().toLocaleDateString()}`,
+            reference,
             status: 'pending_otp',
             created_at: new Date().toISOString(),
           },
@@ -173,7 +175,7 @@ export async function POST(request: NextRequest) {
       const { data: account } = await supabase
         .from('accounts')
         .select('*')
-        .eq('id', transfer.account_id)
+        .eq('id', transfer.recipient_account_id)
         .single()
 
       let newBalance = 0
@@ -188,19 +190,19 @@ export async function POST(request: NextRequest) {
             available_balance: newBalance,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', transfer.account_id)
+          .eq('id', transfer.recipient_account_id)
 
         // Create transaction record
         await supabase.from('transactions').insert([
           {
-            account_id: transfer.account_id,
-            user_id: transfer.user_id,
+            account_id: transfer.recipient_account_id,
+            user_id: transfer.recipient_user_id,
             description: transfer.description || `Credit from Chase Bank`,
             amount: transfer.amount,
             type: 'credit',
             category: 'admin_credit',
             status: 'completed',
-            reference: `ADM-${transferId.slice(0, 8).toUpperCase()}`,
+            reference: transfer.reference,
             created_at: new Date().toISOString(),
             transaction_date: new Date().toISOString(),
             settlement_date: new Date().toISOString(),
@@ -213,45 +215,36 @@ export async function POST(request: NextRequest) {
         
         await supabase.from('notifications').insert([
           {
-            user_id: transfer.user_id,
+            user_id: transfer.recipient_user_id,
             title: `Credit Alert: ${formattedAmount}`,
-            message: `${formattedAmount} has been credited to your ${account.name} (****${account.account_number}). New balance: ${formattedBalance}. Ref: ADM-${transferId.slice(0, 8).toUpperCase()}`,
+            message: `${formattedAmount} has been credited to your ${account.name} (****${account.account_number}). New balance: ${formattedBalance}. Ref: ${transfer.reference}`,
             type: 'credit',
             is_read: false,
             category: 'Transactions',
             data: {
               amount: transfer.amount,
               newBalance,
-              accountId: transfer.account_id,
+              accountId: transfer.recipient_account_id,
               accountName: account.name,
               transferId,
-              reference: `ADM-${transferId.slice(0, 8).toUpperCase()}`,
+              reference: transfer.reference,
               type: 'credit',
             },
             created_at: new Date().toISOString(),
           },
         ])
 
-        // Log audit
-        await supabase.from('audit_logs').insert([
-          {
-            admin_id: adminId,
-            action: 'transfer_completed',
-            details: {
-              transferId,
-              userId: transfer.user_id,
-              amount: transfer.amount,
-              accountId: transfer.account_id,
-            },
-            timestamp: new Date().toISOString(),
-          },
-        ])
+        // Update admin_transfers to mark notifications sent
+        await supabase
+          .from('admin_transfers')
+          .update({ notification_sent: true })
+          .eq('id', transferId)
 
         // Get user details for alerts
         const { data: userData } = await supabase
           .from('users')
-          .select('email, phone')
-          .eq('id', transfer.user_id)
+          .select('email, phone, push_subscription')
+          .eq('id', transfer.recipient_user_id)
           .single()
 
         // Send real-time alerts via SMS, Push, and Email
@@ -262,12 +255,15 @@ export async function POST(request: NextRequest) {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                userId: transfer.user_id,
+                userId: transfer.recipient_user_id,
                 userPhone: userData?.phone,
                 userEmail: userData?.email,
+                pushSubscription: userData?.push_subscription,
                 recipientName: 'Chase Bank',
                 amount: transfer.amount,
                 accountName: account.name,
+                newBalance,
+                reference: transfer.reference,
                 transferId,
                 broadcastToAllDevices: true,
               }),
@@ -275,6 +271,11 @@ export async function POST(request: NextRequest) {
           )
 
           if (alertResponse.ok) {
+            // Update admin_transfers to mark SMS and push sent
+            await supabase
+              .from('admin_transfers')
+              .update({ sms_sent: true, push_sent: true })
+              .eq('id', transferId)
             console.log('[v0] Transfer alerts sent successfully')
           } else {
             console.error('[v0] Failed to send transfer alerts')
@@ -288,7 +289,8 @@ export async function POST(request: NextRequest) {
       console.log('[v0] Admin transfer completed:', {
         transferId,
         amount: transfer.amount,
-        recipient: transfer.user_id,
+        recipient: transfer.recipient_user_id,
+        reference: transfer.reference,
       })
 
       return NextResponse.json({
@@ -327,13 +329,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get transfer history
+    // Get transfer history with recipient info
     const { data: transfers, error } = await supabase
       .from('admin_transfers')
       .select(`
         *,
-        users(id, email, name),
-        accounts(id, name, account_type, account_number, balance)
+        recipient:users!admin_transfers_recipient_user_id_fkey(id, email, name, phone),
+        account:accounts!admin_transfers_recipient_account_id_fkey(id, name, account_type, account_number, balance)
       `)
       .order('created_at', { ascending: false })
       .limit(100)
