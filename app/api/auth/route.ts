@@ -171,31 +171,31 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Check if TOTP 2FA is enabled
-      if (user.two_factor_enabled && user.totp_secret) {
-        return NextResponse.json({
-          message: 'TOTP verification required',
-          userId: user.id,
-          userName: user.name,
-          userRole: user.role,
-          requiresTOTP: true,
-          requiresOTP: false,
-        })
-      }
+      // Update last login
+      await supabase
+        .from('users')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', user.id)
 
-      // Generate OTP
-      const otpCode = generateAndStoreOTP(user.id)
+      // Fetch user accounts
+      const { data: userAccounts } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', user.id)
 
-      // In production, send via SMS/Email
-      console.log(`[v0] OTP sent to ${email}: ${otpCode}`)
-
+      // Direct authentication - no OTP/2FA required
       return NextResponse.json({
-        message: 'OTP sent',
+        message: 'Authentication successful',
         userId: user.id,
-        userName: user.name,
-        userRole: user.role,
-        userEmail: user.email,
-        requiresOTP: true,
+        authenticated: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          phone: user.phone,
+        },
+        accounts: userAccounts || [],
       })
     }
 
