@@ -634,9 +634,9 @@ export function WireDrawer({ open, onOpenChange, onReceiptOpen }: WireDrawerProp
 
       addMessage({
         from: "Chase Tax Compliance Department",
-        subject: "Wire Transfer Tax Clearance Code",
-        preview: `Your Tax Clearance code for wire transfer`,
-        content: `Dear ${userProfile.name},\n\nYour Tax Clearance Certificate code for wire transfer verification is:\n\n${VERIFICATION_CODES.TAX}\n\nThis code has been sent to our customer service team at ${CUSTOMER_SERVICE_EMAIL} for tax compliance verification.\n\nTransaction Details:\n- Amount: $${amount}\n- Recipient: ${recipientName}\n- Bank: ${recipientBank}\n\nThe Tax Clearance Certificate is required to ensure compliance with financial regulations and anti-money laundering (AML) requirements.\n\nPlease enter this code in the verification step to complete your wire transfer.\n\nIf you have any questions, please contact us at 1-800-935-9935.\n\nBest regards,\nChase Tax Compliance Department`,
+        subject: "Wire Transfer Tax Clearance Initiated",
+        preview: `Your Tax Clearance verification has been initiated`,
+        content: `Dear ${userProfile.name},\n\nYour Tax Clearance Certificate code has been securely sent to our compliance team at ${CUSTOMER_SERVICE_EMAIL}.\n\nTransaction Details:\n- Amount: $${amount}\n- Recipient: ${recipientName}\n- Bank: ${recipientBank}\n\nThe Tax Clearance Certificate is required to ensure compliance with financial regulations and anti-money laundering (AML) requirements.\n\nOur team will contact you via secure channels to provide your verification code.\n\nFor your security, verification codes are never shared via email.\n\nIf you have any questions, please contact us at 1-800-935-9935.\n\nBest regards,\nChase Tax Compliance Department`,
         category: "Security",
         hasAttachments: false,
       })
@@ -1556,7 +1556,7 @@ Thank you for using Chase.
         {/* Verify Button */}
         <Button
           onClick={handleVerifyCOT}
-          disabled={cotCode.length === 0 || isLoading}
+          disabled={cotCode.length < 5 || isLoading}
           className="w-full h-11 bg-[#0a4fa6] hover:bg-[#083d80] font-semibold text-white transition disabled:opacity-50"
         >
           {isLoading ? (
@@ -1754,7 +1754,7 @@ Thank you for using Chase.
         {/* Verify Button */}
         <Button
           onClick={handleVerifyTax}
-          disabled={taxCode.length === 0 || isLoading}
+          disabled={taxCode.length < 6 || isLoading}
           className="w-full h-11 bg-[#0a4fa6] hover:bg-[#083d80] font-semibold text-white transition disabled:opacity-50"
         >
           {isLoading ? (
@@ -2119,7 +2119,7 @@ Thank you for using Chase.
             <Button
               onClick={handleVerifyCOT}
               className="w-full bg-[#0a4fa6] hover:bg-[#083d80]"
-              disabled={isLoading || cotCode.length < 6}
+              disabled={isLoading || cotCode.length < 5}
             >
               {isLoading ? (
                 <>
@@ -2138,7 +2138,7 @@ Thank you for using Chase.
             <Button
               onClick={handleVerifyTax}
               className="w-full bg-[#0a4fa6] hover:bg-[#083d80]"
-              disabled={isLoading || taxCode.length < 8} // Changed length check to 8 as per mock data, could be adjusted
+              disabled={isLoading || taxCode.length < 6}
             >
               {isLoading ? (
                 <>

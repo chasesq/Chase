@@ -37,6 +37,7 @@ interface RealtimeContextType {
 	hrTables: Set<string>;
 	inventoryTables: Set<string>;
 	securityTables: Set<string>;
+	publicTables: Set<string>;
 }
 
 const RealtimeContext = createContext<RealtimeContextType | undefined>(
@@ -55,6 +56,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 	const hrTables = new Set(['departments', 'employee', 'attendance', 'payroll', 'leave_requests']);
 	const inventoryTables = new Set(['categories', 'products', 'suppliers', 'stock_transactions', 'purchase_orders']);
 	const securityTables = new Set(['users', 'roles', 'permissions', 'audit_logs', 'sessions']);
+	// Public schema tables for Chase banking app
+	const publicTables = new Set(['accounts', 'transactions', 'notifications', 'users', 'admin_transfers']);
 
 	// Use the singleton client from lib/supabase/client (may be null if not configured)
 	const supabaseRef = useRef<ReturnType<typeof createSupabaseClient> | null>(null);
@@ -134,7 +137,14 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 	);
 
 	useEffect(() => {
-		// Auto-subscribe to all module tables on mount
+		// Auto-subscribe to public schema tables for Chase banking (critical for real-time updates)
+		const publicUnsubscribes = Array.from(publicTables).map((table) => {
+			return subscribe({ schema: 'public', table, event: '*' }, (update) => {
+				console.log(`[v0] Real-time update on ${table}:`, update.event, update.new?.id || update.old?.id);
+			});
+		});
+
+		// Also subscribe to module tables if they exist
 		const allTables = [
 			...Array.from(financeTables),
 			...Array.from(hrTables),
@@ -142,7 +152,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 			...Array.from(securityTables),
 		];
 
-		const unsubscribes = allTables.map((table) => {
+		const moduleUnsubscribes = allTables.map((table) => {
 			let schema = 'public';
 			if (financeTables.has(table)) schema = 'finance';
 			else if (hrTables.has(table)) schema = 'human_resource';
@@ -153,7 +163,8 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 		});
 
 		return () => {
-			unsubscribes.forEach((unsub) => unsub());
+			publicUnsubscribes.forEach((unsub) => unsub());
+			moduleUnsubscribes.forEach((unsub) => unsub());
 		};
 	}, [subscribe]);
 
@@ -167,6 +178,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
 				hrTables,
 				inventoryTables,
 				securityTables,
+				publicTables,
 			}}
 		>
 			{children}

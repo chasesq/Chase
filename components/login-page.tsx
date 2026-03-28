@@ -866,9 +866,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setIsOpeningAccount(true)
 
     try {
-      // Get the current logged-in user or create a temp user session
+      // Get the current logged-in user - require authentication
       const currentUser = localStorage.getItem("chase_current_user")
-      let userId = currentUser ? JSON.parse(currentUser).id : "guest_user_" + Date.now()
+      if (!currentUser) {
+        setAccountOpenError("Please log in or sign up first to open an account")
+        setIsOpeningAccount(false)
+        return
+      }
+      
+      const userId = JSON.parse(currentUser).id
+      if (!userId) {
+        setAccountOpenError("Please log in or sign up first to open an account")
+        setIsOpeningAccount(false)
+        return
+      }
 
       // Call the account opening API
       const response = await fetch("/api/accounts/open", {
