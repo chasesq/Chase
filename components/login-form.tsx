@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,43 +26,20 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'login',
-          email,
-          password,
-        }),
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
+      if (error) throw error
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed')
-      }
-
-      if (data.authenticated) {
-        // Store user session data
-        localStorage.setItem('userId', data.userId)
-        localStorage.setItem('userName', data.user?.name || '')
-        localStorage.setItem('userEmail', data.user?.email || '')
-        localStorage.setItem('userRole', data.user?.role || 'user')
-        
-        // Store accounts if available
-        if (data.accounts) {
-          localStorage.setItem('userAccounts', JSON.stringify(data.accounts))
-        }
-
-        // Redirect to dashboard
-        router.push('/')
-      } else {
-        throw new Error('Authentication failed')
-      }
+      // Redirect to dashboard on success
+      router.push('/')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred during sign in. Please try again.')
     } finally {
