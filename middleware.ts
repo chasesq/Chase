@@ -7,22 +7,23 @@ const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
 export async function middleware(request: NextRequest) {
-  // If Supabase credentials are missing, skip middleware
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.next({
+  try {
+    // If Supabase credentials are missing, skip middleware entirely
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.next({
+        request: {
+          headers: request.headers,
+        },
+      })
+    }
+
+    let response = NextResponse.next({
       request: {
         headers: request.headers,
       },
     })
-  }
 
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll()
@@ -33,40 +34,48 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
-    },
-  )
+    })
 
-  // Refresh session if it exists
-  await supabase.auth.getSession()
+    // Refresh session if it exists
+    await supabase.auth.getSession()
 
-  // Protect routes
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    // Get the current session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
-  const pathname = request.nextUrl.pathname
+    const pathname = request.nextUrl.pathname
 
-  // Auth routes (login, sign-up, etc.)
-  const authRoutes = ['/auth/login', '/auth/sign-up', '/auth/forgot-password', '/auth/reset-password', '/auth/sign-up-success', '/auth/onboarding-success', '/auth/error']
-  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
+    // Auth routes (login, sign-up, etc.)
+    const authRoutes = ['/auth/login', '/auth/sign-up', '/auth/forgot-password', '/auth/reset-password', '/auth/sign-up-success', '/auth/onboarding-success', '/auth/error']
+    const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
 
-  // Protected routes that require authentication
-  const protectedRoutes = ['/admin', '/settings', '/dashboard']
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+    // Protected routes that require authentication
+    const protectedRoutes = ['/admin', '/settings', '/dashboard']
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
-  // Redirect unauthenticated users away from protected routes
-  if (isProtectedRoute && !session) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    // Redirect unauthenticated users away from protected routes
+    if (isProtectedRoute && !session) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+
+    // Redirect authenticated users away from auth pages (login/sign-up)
+    const redirectAuthRoutes = ['/auth/login', '/auth/sign-up']
+    const shouldRedirectAuth = redirectAuthRoutes.some(route => pathname === route)
+    if (shouldRedirectAuth && session) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    return response
+  } catch (error) {
+    // If anything fails in middleware, just continue to next
+    console.error('[middleware] Error:', error)
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    })
   }
-
-  // Redirect authenticated users away from auth pages (login/sign-up)
-  const redirectAuthRoutes = ['/auth/login', '/auth/sign-up']
-  const shouldRedirectAuth = redirectAuthRoutes.some(route => pathname === route)
-  if (shouldRedirectAuth && session) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
-  return response
 }
 
 export const config = {
