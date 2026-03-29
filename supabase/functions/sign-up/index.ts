@@ -70,10 +70,10 @@ serve(async (req) => {
       .from('users')
       .insert([
         {
-          name,
+          full_name: name,
           email,
           password_hash: hashedPassword,
-          created_at: new Date().toISOString(),
+          phone: null,
         },
       ])
       .select()
