@@ -48,7 +48,8 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('[v0] Starting Supabase auth signUp...')
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -61,6 +62,8 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
           },
         },
       })
+
+      console.log('[v0] SignUp response:', { data, error })
 
       if (error) throw error
 
