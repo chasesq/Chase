@@ -11,6 +11,9 @@ importers:
       '@auth0/auth0-acul-js':
         specifier: ^1.0.0
         version: 1.2.0
+      '@auth0/auth0-acul-react':
+        specifier: ^1.2.0
+        version: 1.2.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@hookform/resolvers':
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.0))
@@ -232,6 +235,12 @@ packages:
   '@auth0/auth0-acul-js@1.2.0':
     resolution: {integrity: sha512-+5/A74wVS5wtk1rpVqC0ZwxdopsuTzWoDFZrYDzOauKBtezofMp07Xn5AOafE6lvIAs/Ep9DXDAQIhwVVubP3w==}
     engines: {node: '>=18'}
+
+  '@auth0/auth0-acul-react@1.2.0':
+    resolution: {integrity: sha512-R/urQjbqDa018knkL+rcupNmz0K9X6FVMVvr8DllFVNPjpxS/nnDgyvBd481bIyWl5E4Qyy/Kluv8fkxiufmNA==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
 
   '@babel/runtime@7.28.6':
     resolution: {integrity: sha512-05WQkdpL9COIMz4LjTxGpPNCdlpyimKppYNoJ5Di5EUObifl8t4tuLuUBBZEpoLYOmfvIWrsp9fCl0HoPRVTdA==}
@@ -2550,6 +2559,12 @@ snapshots:
   '@alloc/quick-lru@5.2.0': {}
 
   '@auth0/auth0-acul-js@1.2.0': {}
+
+  '@auth0/auth0-acul-react@1.2.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
+      '@auth0/auth0-acul-js': 1.2.0
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
 
   '@babel/runtime@7.28.6': {}
 

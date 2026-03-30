@@ -2,8 +2,8 @@
 
 import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { MFASetupForm } from '@/components/mfa-setup-form'
 import { useRouter } from 'next/navigation'
+import { ACULMfaBeginEnrollOptions } from '@/components/acul-mfa-begin-enroll-options'
 
 function MFASetupContent() {
   const searchParams = useSearchParams()
@@ -20,7 +20,6 @@ function MFASetupContent() {
       return
     }
 
-    // For now, we'll use a placeholder email. In production, you'd fetch user data from Auth0
     setUserData({
       userId,
       email: email || 'user@example.com',
@@ -55,14 +54,14 @@ function MFASetupContent() {
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="w-full max-w-md">
-        <MFASetupForm
+        <ACULMfaBeginEnrollOptions
           userId={userData.userId}
           userEmail={userData.email}
-          onSkip={() => {
-            // User skipped MFA setup
-          }}
           onComplete={() => {
-            // MFA setup completed
+            router.push('/auth/mfa-setup-complete')
+          }}
+          onSkip={() => {
+            router.push('/auth/sign-up-success')
           }}
         />
       </div>
@@ -77,3 +76,4 @@ export default function MFASetupPage() {
     </Suspense>
   )
 }
+
