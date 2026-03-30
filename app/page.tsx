@@ -40,7 +40,6 @@ export default function Page() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
-  const [userProfile, setUserProfile] = useState<any>(null)
 
   const [sendMoneyOpen, setSendMoneyOpen] = useState(false)
   const [depositChecksOpen, setDepositChecksOpen] = useState(false)
@@ -80,7 +79,6 @@ export default function Page() {
       const profile = localStorage.getItem("user_profile")
       if (profile) {
         try {
-          setUserProfile(JSON.parse(profile))
           setIsLoggedIn(true)
         } catch (err) {
           setIsLoggedIn(false)
