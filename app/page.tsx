@@ -40,6 +40,7 @@ export default function Page() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
+  const [userProfile, setUserProfile] = useState<any>(null)
 
   const [sendMoneyOpen, setSendMoneyOpen] = useState(false)
   const [depositChecksOpen, setDepositChecksOpen] = useState(false)
@@ -76,8 +77,15 @@ export default function Page() {
 
   useEffect(() => {
     const checkAuth = () => {
-      const loggedIn = localStorage.getItem("chase_logged_in") === "true"
-      setIsLoggedIn(loggedIn)
+      const profile = localStorage.getItem("user_profile")
+      if (profile) {
+        try {
+          setUserProfile(JSON.parse(profile))
+          setIsLoggedIn(true)
+        } catch (err) {
+          setIsLoggedIn(false)
+        }
+      }
       setIsCheckingAuth(false)
     }
     checkAuth()
@@ -140,6 +148,8 @@ export default function Page() {
     }
     setIsLoggedIn(false)
     // Clear all session data on logout
+    localStorage.removeItem("user_profile")
+    localStorage.removeItem("userEmail")
     localStorage.removeItem("chase_logged_in")
     localStorage.removeItem("chase_user_id")
     localStorage.removeItem("chase_user_data")
@@ -337,9 +347,10 @@ export default function Page() {
         <main className="px-4 pt-5 touch-pan-y">
           <div className="mb-5">
             <h1 className="text-2xl font-bold text-foreground">
-              {getGreeting()}, {getUserFirstName()}
+              {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "User"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
+              {userProfile?.account_number && `Account: ${userProfile.account_number} · `}
               {new Date().toLocaleDateString("en-US", {
                 weekday: "long",
                 month: "long",
