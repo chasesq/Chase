@@ -53,7 +53,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
           name,
           email,
           password,
-          phone,
+          phone_number: phone,
         }),
       })
 
