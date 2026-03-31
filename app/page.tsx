@@ -250,12 +250,26 @@ export default function Page() {
               onAddAccount={() => setAddAccountOpen(true)}
               onTransfer={() => setTransferOpen(true)}
             />
+            <QuickActions
+              onSendMoney={() => setSendMoneyOpen(true)}
+              onDepositChecks={() => setDepositChecksOpen(true)}
+              onPayBills={() => setPayBillsOpen(true)}
+              onAddAccount={() => setAddAccountOpen(true)}
+              onTransfer={() => setTransferOpen(true)}
+            />
             <AccountsSection
               onViewAccount={() => setAccountDetailsOpen(true)}
               onLinkExternal={() => setLinkExternalOpen(true)}
               onSeeAllTransactions={() => setTransactionsOpen(true)}
               onReceiptOpen={handleOpenReceipt}
             />
+            <AccountsSection
+              onViewAccount={() => setAccountDetailsOpen(true)}
+              onLinkExternal={() => setLinkExternalOpen(true)}
+              onSeeAllTransactions={() => setTransactionsOpen(true)}
+              onReceiptOpen={handleOpenReceipt}
+            />
+            <CreditJourneyCard onViewScore={() => setCreditScoreOpen(true)} />
             <CreditJourneyCard onViewScore={() => setCreditScoreOpen(true)} />
           </div>
         )
