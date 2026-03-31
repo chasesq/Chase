@@ -32,6 +32,8 @@ const TransactionsDrawer = dynamic(() => import("@/components/transactions-drawe
 const LoginPage = dynamic(() => import("@/components/login-page").then(m => ({ default: m.LoginPage })), { ssr: false })
 const DisputeTransactionDrawer = dynamic(() => import("@/components/dispute-transaction-drawer").then(m => ({ default: m.DisputeTransactionDrawer })), { ssr: false })
 const ViewTransition = dynamic(() => import("@/components/view-transition").then(m => ({ default: m.ViewTransition })), { ssr: false })
+const AddFundsDrawer = dynamic(() => import("@/components/add-funds-drawer").then(m => ({ default: m.AddFundsDrawer })), { ssr: false })
+const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboard-drawer").then(m => ({ default: m.StripeDashboardDrawer })), { ssr: false })
 
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
@@ -55,6 +57,8 @@ export default function Page() {
   const [transactionsOpen, setTransactionsOpen] = useState(false)
   const [disputeOpen, setDisputeOpen] = useState(false)
   const [disputeTransactionId, setDisputeTransactionId] = useState<string | null>(null)
+  const [addFundsOpen, setAddFundsOpen] = useState(false)
+  const [stripeDashboardOpen, setStripeDashboardOpen] = useState(false)
   const { toast } = useToast()
 
   const {
@@ -249,6 +253,17 @@ export default function Page() {
               onPayBills={() => setPayBillsOpen(true)}
               onAddAccount={() => setAddAccountOpen(true)}
               onTransfer={() => setTransferOpen(true)}
+              onAddFunds={() => setAddFundsOpen(true)}
+              onStripeDashboard={() => setStripeDashboardOpen(true)}
+            />
+            <QuickActions
+              onSendMoney={() => setSendMoneyOpen(true)}
+              onDepositChecks={() => setDepositChecksOpen(true)}
+              onPayBills={() => setPayBillsOpen(true)}
+              onAddAccount={() => setAddAccountOpen(true)}
+              onTransfer={() => setTransferOpen(true)}
+              onAddFunds={() => setAddFundsOpen(true)}
+              onStripeDashboard={() => setStripeDashboardOpen(true)}
             />
             <AccountsSection
               onViewAccount={() => setAccountDetailsOpen(true)}
@@ -256,6 +271,13 @@ export default function Page() {
               onSeeAllTransactions={() => setTransactionsOpen(true)}
               onReceiptOpen={handleOpenReceipt}
             />
+            <AccountsSection
+              onViewAccount={() => setAccountDetailsOpen(true)}
+              onLinkExternal={() => setLinkExternalOpen(true)}
+              onSeeAllTransactions={() => setTransactionsOpen(true)}
+              onReceiptOpen={handleOpenReceipt}
+            />
+            <CreditJourneyCard onViewScore={() => setCreditScoreOpen(true)} />
             <CreditJourneyCard onViewScore={() => setCreditScoreOpen(true)} />
           </div>
         )
@@ -394,6 +416,12 @@ export default function Page() {
 
         {/* Dispute Transaction Drawer */}
         <DisputeTransactionDrawer open={disputeOpen} onOpenChange={setDisputeOpen} transactionId={disputeTransactionId} />
+
+        {/* Add Funds Drawer (Stripe) */}
+        <AddFundsDrawer open={addFundsOpen} onOpenChange={setAddFundsOpen} />
+
+        {/* Stripe Dashboard (Payout Reconciliation & Refunds) */}
+        <StripeDashboardDrawer open={stripeDashboardOpen} onOpenChange={setStripeDashboardOpen} />
       </div>
   )
 }
