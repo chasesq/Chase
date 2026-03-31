@@ -65,7 +65,7 @@ const DECLINE_MESSAGES: Record<string, string> = {
   'authentication_required': 'Additional authentication required. Please complete verification.',
 }
 
-export function getDeclineMessage(declineCode: string | null | undefined): string {
+export async function getDeclineMessage(declineCode: string | null | undefined): Promise<string> {
   if (!declineCode) return 'Payment failed. Please try again.'
   return DECLINE_MESSAGES[declineCode] || 'Your payment could not be processed. Please try a different payment method.'
 }

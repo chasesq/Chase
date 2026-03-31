@@ -112,9 +112,9 @@ export function AddFundsDrawer({ open, onOpenChange }: AddFundsDrawerProps) {
     setPaymentError(null)
   }
 
-  const handlePaymentError = (error: { decline_code?: string; code?: string; message?: string }) => {
+  const handlePaymentError = async (error: { decline_code?: string; code?: string; message?: string }) => {
     const declineCode = error.decline_code || error.code
-    const errorMessage = getDeclineMessage(declineCode)
+    const errorMessage = await getDeclineMessage(declineCode)
     
     setPaymentError({
       message: errorMessage,
