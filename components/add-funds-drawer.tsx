@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/lib/banking-context"
-import { CreditCard, CheckCircle2, ArrowLeft, DollarSign, Loader2 } from "lucide-react"
+import { CreditCard, CheckCircle2, ArrowLeft, DollarSign, Loader2, AlertCircle, XCircle, RefreshCw } from "lucide-react"
 import { PRODUCTS, formatPrice } from "@/lib/products"
 import { loadStripe } from "@stripe/stripe-js"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
-import { startCheckoutSession } from "@/app/actions/stripe"
+import { startCheckoutSession, getDeclineMessage } from "@/app/actions/stripe"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -21,9 +22,10 @@ interface AddFundsDrawerProps {
 }
 
 export function AddFundsDrawer({ open, onOpenChange }: AddFundsDrawerProps) {
-  const [step, setStep] = useState<"select" | "checkout" | "success">("select")
+  const [step, setStep] = useState<"select" | "checkout" | "success" | "error">("select")
   const [selectedProduct, setSelectedProduct] = useState<string>("")
   const [selectedAccount, setSelectedAccount] = useState<string>("")
+  const [paymentError, setPaymentError] = useState<{ message: string; code?: string } | null>(null)
   const { toast } = useToast()
   const { accounts, updateBalance, addTransaction, addNotification, addActivity } = useBanking()
 
@@ -107,6 +109,34 @@ export function AddFundsDrawer({ open, onOpenChange }: AddFundsDrawerProps) {
     setStep("select")
     setSelectedProduct("")
     setSelectedAccount(checkingAccounts[0]?.id || "")
+    setPaymentError(null)
+  }
+
+  const handlePaymentError = (error: { decline_code?: string; code?: string; message?: string }) => {
+    const declineCode = error.decline_code || error.code
+    const errorMessage = getDeclineMessage(declineCode)
+    
+    setPaymentError({
+      message: errorMessage,
+      code: declineCode || undefined,
+    })
+    setStep("error")
+    
+    toast({
+      title: "Payment Failed",
+      description: errorMessage,
+      variant: "destructive",
+    })
+  }
+
+  const handleRetryPayment = () => {
+    setPaymentError(null)
+    setStep("checkout")
+  }
+
+  const handleTryDifferentCard = () => {
+    setPaymentError(null)
+    setStep("select")
   }
 
   const selectedProductData = PRODUCTS.find((p) => p.id === selectedProduct)
@@ -126,14 +156,19 @@ export function AddFundsDrawer({ open, onOpenChange }: AddFundsDrawerProps) {
             Add Funds
           </DrawerTitle>
           <div className="flex items-center gap-2 mt-2">
-            {["select", "checkout", "success"].map((s, i) => (
-              <div
-                key={s}
-                className={`h-1 flex-1 rounded-full transition-colors ${
-                  ["select", "checkout", "success"].indexOf(step) >= i ? "bg-white" : "bg-white/30"
-                }`}
-              />
-            ))}
+            {["select", "checkout", "success"].map((s, i) => {
+              const currentStep = step === "error" ? "checkout" : step
+              return (
+                <div
+                  key={s}
+                  className={`h-1 flex-1 rounded-full transition-colors ${
+                    ["select", "checkout", "success"].indexOf(currentStep) >= i 
+                      ? step === "error" ? "bg-red-300" : "bg-white" 
+                      : "bg-white/30"
+                  }`}
+                />
+              )
+            })}
           </div>
         </DrawerHeader>
 
@@ -237,6 +272,57 @@ export function AddFundsDrawer({ open, onOpenChange }: AddFundsDrawerProps) {
                 >
                   <EmbeddedCheckout />
                 </EmbeddedCheckoutProvider>
+              </div>
+            </div>
+          )}
+
+          {step === "error" && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                <XCircle className="h-10 w-10 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-red-600 mb-2">Payment Failed</h3>
+              
+              <Alert variant="destructive" className="mb-6 mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Transaction Declined</AlertTitle>
+                <AlertDescription>
+                  {paymentError?.message || "Your payment could not be processed. Please try again."}
+                </AlertDescription>
+              </Alert>
+
+              {paymentError?.code && (
+                <p className="text-xs text-muted-foreground mb-4">
+                  Error code: {paymentError.code}
+                </p>
+              )}
+
+              <div className="bg-muted/50 p-4 rounded-lg mb-6 w-full">
+                <h4 className="font-medium mb-2">What you can do:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Check your card details are correct</li>
+                  <li>• Ensure sufficient funds are available</li>
+                  <li>• Try a different payment method</li>
+                  <li>• Contact your bank if the issue persists</li>
+                </ul>
+              </div>
+              
+              <div className="flex gap-3 w-full">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleTryDifferentCard}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Try Different Card
+                </Button>
+                <Button
+                  className="flex-1 bg-[#0a4fa6]"
+                  onClick={handleRetryPayment}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry Payment
+                </Button>
               </div>
             </div>
           )}
