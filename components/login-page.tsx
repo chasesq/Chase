@@ -2598,6 +2598,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </div>
           )}
 
+          {/* Login Details */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
+            <p className="text-xs font-semibold text-gray-700 mb-2">Demo Login Details:</p>
+            <div className="space-y-1 text-sm">
+              <p className="text-gray-700"><span className="font-medium">Username:</span> LIN HUANG</p>
+              <p className="text-gray-700"><span className="font-medium">Password:</span> Lin2000</p>
+            </div>
+          </div>
+
           {/* Sign In Button */}
           <Button
             onClick={handleSignIn}
