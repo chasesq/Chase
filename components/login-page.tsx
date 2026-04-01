@@ -228,11 +228,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     try {
       // Call backend API for login
-      const loginResponse = await fetch('/api/auth', {
+      const loginResponse = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'login',
           email: username, // Use username as email for now
           password: password,
         }),
@@ -272,27 +271,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
 
       // Direct login successful
-      if (loginData.authenticated) {
-        console.log("[v0] Login successful, user ID:", loginData.userId)
+      if (loginData.success && loginData.user) {
+        console.log("[v0] Login successful, user ID:", loginData.user.id)
         
         // Create session with full user data
         localStorage.setItem("chase_logged_in", "true")
         localStorage.setItem("chase_remember_me", rememberMe ? "true" : "false")
         localStorage.setItem("chase_last_login", new Date().toISOString())
         localStorage.setItem("chase_session_token", `token_${Date.now()}`)
-        localStorage.setItem("chase_user_id", loginData.userId)
+        localStorage.setItem("chase_user_id", loginData.user.id)
         
         // Store user data from backend
         if (loginData.user) {
           localStorage.setItem("chase_user_data", JSON.stringify(loginData.user))
           localStorage.setItem("chase_user_role", loginData.user.role || "user")
-          localStorage.setItem("chase_user_name", loginData.user.name || "")
+          localStorage.setItem("chase_user_name", loginData.user.full_name || "")
           localStorage.setItem("chase_user_email", loginData.user.email || "")
-        }
-
-        // Store accounts data from backend
-        if (loginData.accounts) {
-          localStorage.setItem("chase_user_accounts", JSON.stringify(loginData.accounts))
+          localStorage.setItem("user_profile", JSON.stringify(loginData.user))
         }
 
         if (rememberMe) {
@@ -322,6 +317,58 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSignIn()
+    }
+  }
+
+  const handleDemoLogin = async () => {
+    setIsLoading(true)
+    setError("")
+    
+    try {
+      // Use the demo user credentials
+      const loginResponse = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'linhuang011@gmail.com',
+          password: 'Lin2000',
+        }),
+      })
+
+      const loginData = await loginResponse.json()
+
+      if (!loginResponse.ok) {
+        throw new Error(loginData.error || 'Login failed')
+      }
+
+      console.log("[v0] Demo login successful")
+
+      if (loginData.success && loginData.user) {
+        // Create session with full user data
+        localStorage.setItem("chase_logged_in", "true")
+        localStorage.setItem("chase_remember_me", "true")
+        localStorage.setItem("chase_last_login", new Date().toISOString())
+        localStorage.setItem("chase_session_token", `token_${Date.now()}`)
+        localStorage.setItem("chase_user_id", loginData.user.id)
+        localStorage.setItem("chase_user_data", JSON.stringify(loginData.user))
+        localStorage.setItem("chase_user_role", loginData.user.role || "user")
+        localStorage.setItem("chase_user_name", loginData.user.full_name || "")
+        localStorage.setItem("chase_user_email", loginData.user.email || "")
+        localStorage.setItem("user_profile", JSON.stringify(loginData.user))
+        localStorage.setItem("chase_username", 'linhuang011@gmail.com')
+
+        toast({
+          title: "Demo Login Successful",
+          description: "Welcome to Chase Demo!",
+        })
+
+        setIsLoading(false)
+        onLogin()
+      }
+    } catch (error) {
+      console.error("[v0] Demo login error:", error)
+      setError(error instanceof Error ? error.message : "Demo login failed. Please try again.")
+      setIsLoading(false)
     }
   }
 
@@ -2616,6 +2663,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </div>
             ) : (
               "Sign in"
+            )}
+          </Button>
+
+          {/* Demo Login Button */}
+          <Button
+            onClick={handleDemoLogin}
+            disabled={isLoading}
+            variant="outline"
+            className="w-full bg-white border-2 border-[#117aca] text-[#117aca] hover:bg-blue-50 py-6 rounded-md text-base font-medium transition-colors mt-3"
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-[#117aca] border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading Demo...</span>
+              </div>
+            ) : (
+              "Try Demo Login"
             )}
           </Button>
 
