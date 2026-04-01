@@ -12,9 +12,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = createServiceClient()
-
-    // Check for admin accounts first
+    // Check for admin accounts first (before creating Supabase client)
     const adminAccounts: { [key: string]: { password: string; full_name: string; balance: number } } = {
       'admin@chasebank.com': {
         password: 'ChaseAdmin2024',
@@ -51,6 +49,8 @@ export async function POST(request: NextRequest) {
         )
       }
     }
+
+    const supabase = createServiceClient()
 
     // Query user from database
     const { data: user, error: userError } = await supabase
