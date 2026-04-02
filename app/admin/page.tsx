@@ -41,7 +41,7 @@ export default function AdminDashboard() {
   const [pendingTransfers, setPendingTransfers] = useState<AdminTransfer[]>([])
   const [transferHistory, setTransferHistory] = useState<AdminTransfer[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts' | 'issuing' | 'credit' | 'test-utilities'>('new-users')
+  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts' | 'financial-accounts-2' | 'issuing' | 'credit' | 'test-utilities'>('new-users')
   const supabase = createClient()
 
   // Fetch initial data
@@ -237,6 +237,16 @@ export default function AdminDashboard() {
               Financial Accounts
             </button>
             <button
+              onClick={() => setActiveTab('financial-accounts-2')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+                activeTab === 'financial-accounts-2'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Financial Accounts 2
+            </button>
+            <button
               onClick={() => setActiveTab('issuing')}
               className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
                 activeTab === 'issuing'
@@ -299,6 +309,13 @@ export default function AdminDashboard() {
               <>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Stripe Financial Accounts
+                </h2>
+                <FinancialAccountsDashboard adminId="admin-chase-bank" />
+              </>
+            ) : activeTab === 'financial-accounts-2' ? (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Stripe Financial Accounts 2
                 </h2>
                 <FinancialAccountsDashboard adminId="admin-chase-bank" />
               </>
