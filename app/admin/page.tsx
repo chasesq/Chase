@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import AdminTransferForm from '@/components/admin/admin-transfer-form'
 import AdminUsersList from '@/components/admin/admin-users-list'
 import AdminTransferHistory from '@/components/admin/admin-transfer-history'
+import { FinancialAccountsDashboard } from '@/components/admin/financial-accounts-dashboard'
 
 interface NewUser {
   id: string
@@ -36,7 +37,7 @@ export default function AdminDashboard() {
   const [pendingTransfers, setPendingTransfers] = useState<AdminTransfer[]>([])
   const [transferHistory, setTransferHistory] = useState<AdminTransfer[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history'>('new-users')
+  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts'>('new-users')
   const supabase = createClient()
 
   // Fetch initial data
@@ -221,6 +222,16 @@ export default function AdminDashboard() {
             >
               Transfer History
             </button>
+            <button
+              onClick={() => setActiveTab('financial-accounts')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+                activeTab === 'financial-accounts'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Financial Accounts
+            </button>
           </div>
 
           <div className="p-6">
@@ -249,6 +260,13 @@ export default function AdminDashboard() {
                     <AdminTransferHistory transfers={pendingTransfers} />
                   </div>
                 )}
+              </>
+            ) : activeTab === 'financial-accounts' ? (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Stripe Financial Accounts
+                </h2>
+                <FinancialAccountsDashboard adminId="admin-chase-bank" />
               </>
             ) : (
               <>
