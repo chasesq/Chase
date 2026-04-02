@@ -256,28 +256,12 @@ export default function Page() {
               onAddFunds={() => setAddFundsOpen(true)}
               onStripeDashboard={() => setStripeDashboardOpen(true)}
             />
-            <QuickActions
-              onSendMoney={() => setSendMoneyOpen(true)}
-              onDepositChecks={() => setDepositChecksOpen(true)}
-              onPayBills={() => setPayBillsOpen(true)}
-              onAddAccount={() => setAddAccountOpen(true)}
-              onTransfer={() => setTransferOpen(true)}
-              onAddFunds={() => setAddFundsOpen(true)}
-              onStripeDashboard={() => setStripeDashboardOpen(true)}
-            />
             <AccountsSection
               onViewAccount={() => setAccountDetailsOpen(true)}
               onLinkExternal={() => setLinkExternalOpen(true)}
               onSeeAllTransactions={() => setTransactionsOpen(true)}
               onReceiptOpen={handleOpenReceipt}
             />
-            <AccountsSection
-              onViewAccount={() => setAccountDetailsOpen(true)}
-              onLinkExternal={() => setLinkExternalOpen(true)}
-              onSeeAllTransactions={() => setTransactionsOpen(true)}
-              onReceiptOpen={handleOpenReceipt}
-            />
-            <CreditJourneyCard onViewScore={() => setCreditScoreOpen(true)} />
             <CreditJourneyCard onViewScore={() => setCreditScoreOpen(true)} />
           </div>
         )
