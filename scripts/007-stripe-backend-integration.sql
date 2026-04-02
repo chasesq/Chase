@@ -20,6 +20,10 @@ CREATE TABLE IF NOT EXISTS public.stripe_events (
 );
 
 ALTER TABLE public.stripe_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "stripe_events_read" ON public.stripe_events FOR SELECT USING (true);
+CREATE POLICY "stripe_events_insert" ON public.stripe_events FOR INSERT WITH CHECK (true);
+CREATE POLICY "stripe_events_update" ON public.stripe_events FOR UPDATE USING (true);
+
 CREATE INDEX idx_stripe_events_event_id ON public.stripe_events(event_id);
 CREATE INDEX idx_stripe_events_event_type ON public.stripe_events(event_type);
 CREATE INDEX idx_stripe_events_processed ON public.stripe_events(processed);
@@ -64,6 +68,10 @@ CREATE TABLE IF NOT EXISTS public.stripe_payment_records (
 );
 
 ALTER TABLE public.stripe_payment_records ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "stripe_payment_records_read" ON public.stripe_payment_records FOR SELECT USING (true);
+CREATE POLICY "stripe_payment_records_insert" ON public.stripe_payment_records FOR INSERT WITH CHECK (true);
+CREATE POLICY "stripe_payment_records_update" ON public.stripe_payment_records FOR UPDATE USING (true);
+
 CREATE INDEX idx_stripe_payment_records_user_id ON public.stripe_payment_records(user_id);
 CREATE INDEX idx_stripe_payment_records_account_id ON public.stripe_payment_records(account_id);
 CREATE INDEX idx_stripe_payment_records_payment_intent_id ON public.stripe_payment_records(payment_intent_id);
@@ -123,6 +131,10 @@ CREATE TABLE IF NOT EXISTS public.stripe_connected_accounts (
 );
 
 ALTER TABLE public.stripe_connected_accounts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "stripe_connected_accounts_read" ON public.stripe_connected_accounts FOR SELECT USING (true);
+CREATE POLICY "stripe_connected_accounts_insert" ON public.stripe_connected_accounts FOR INSERT WITH CHECK (true);
+CREATE POLICY "stripe_connected_accounts_update" ON public.stripe_connected_accounts FOR UPDATE USING (true);
+
 CREATE INDEX idx_stripe_connected_accounts_user_id ON public.stripe_connected_accounts(user_id);
 CREATE INDEX idx_stripe_connected_accounts_stripe_account_id ON public.stripe_connected_accounts(stripe_account_id);
 CREATE INDEX idx_stripe_connected_accounts_verification_status ON public.stripe_connected_accounts(verification_status);
@@ -169,6 +181,10 @@ CREATE TABLE IF NOT EXISTS public.payment_reconciliation_logs (
 );
 
 ALTER TABLE public.payment_reconciliation_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "payment_reconciliation_logs_read" ON public.payment_reconciliation_logs FOR SELECT USING (true);
+CREATE POLICY "payment_reconciliation_logs_insert" ON public.payment_reconciliation_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "payment_reconciliation_logs_update" ON public.payment_reconciliation_logs FOR UPDATE USING (true);
+
 CREATE INDEX idx_payment_reconciliation_logs_run_date ON public.payment_reconciliation_logs(run_date DESC);
 CREATE INDEX idx_payment_reconciliation_logs_status ON public.payment_reconciliation_logs(status);
 CREATE INDEX idx_payment_reconciliation_logs_requires_review ON public.payment_reconciliation_logs(requires_review);
@@ -186,6 +202,9 @@ CREATE TABLE IF NOT EXISTS public.stripe_webhook_signatures (
 );
 
 ALTER TABLE public.stripe_webhook_signatures ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "stripe_webhook_signatures_read" ON public.stripe_webhook_signatures FOR SELECT USING (true);
+CREATE POLICY "stripe_webhook_signatures_insert" ON public.stripe_webhook_signatures FOR INSERT WITH CHECK (true);
+
 CREATE INDEX idx_stripe_webhook_signatures_event_id ON public.stripe_webhook_signatures(event_id);
 CREATE INDEX idx_stripe_webhook_signatures_timestamp ON public.stripe_webhook_signatures(timestamp DESC);
 
@@ -217,6 +236,10 @@ CREATE TABLE IF NOT EXISTS public.payment_discrepancies (
 );
 
 ALTER TABLE public.payment_discrepancies ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "payment_discrepancies_read" ON public.payment_discrepancies FOR SELECT USING (true);
+CREATE POLICY "payment_discrepancies_insert" ON public.payment_discrepancies FOR INSERT WITH CHECK (true);
+CREATE POLICY "payment_discrepancies_update" ON public.payment_discrepancies FOR UPDATE USING (true);
+
 CREATE INDEX idx_payment_discrepancies_stripe_payment_id ON public.payment_discrepancies(stripe_payment_id);
 CREATE INDEX idx_payment_discrepancies_status ON public.payment_discrepancies(status);
 CREATE INDEX idx_payment_discrepancies_discrepancy_type ON public.payment_discrepancies(discrepancy_type);
