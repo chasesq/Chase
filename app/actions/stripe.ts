@@ -3,13 +3,26 @@
 import { stripe } from '@/lib/stripe'
 import { PRODUCTS } from '@/lib/products'
 
-export async function startCheckoutSession(productId: string, accountId?: string) {
+/**
+ * Start a checkout session with support for multiple payment methods
+ * @param productId - The product ID to checkout
+ * @param accountId - Optional account ID for metadata
+ * @param paymentMethod - Type of payment method to use (default: all)
+ */
+export async function startCheckoutSession(
+  productId: string,
+  accountId?: string,
+  paymentMethod: 'card' | 'express' | 'all' = 'all'
+) {
   const product = PRODUCTS.find((p) => p.id === productId)
   if (!product) {
     throw new Error(`Product with id "${productId}" not found`)
   }
 
-  // Create Checkout Sessions from body params.
+  // Configure allowed payment methods based on request
+  const paymentMethodTypes = getPaymentMethodTypes(paymentMethod)
+
+  // Create Checkout Sessions with enhanced payment method support
   const session = await stripe.checkout.sessions.create({
     ui_mode: 'embedded',
     redirect_on_completion: 'never',
@@ -27,6 +40,61 @@ export async function startCheckoutSession(productId: string, accountId?: string
       },
     ],
     mode: 'payment',
+    payment_method_types: paymentMethodTypes,
+    metadata: {
+      productId: product.id,
+      accountId: accountId || '',
+      amountInCents: product.priceInCents.toString(),
+    },
+    // Enable all express checkout methods (Apple Pay, Google Pay, PayPal, Amazon Pay, Link)
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: 'always',
+    },
+  })
+
+  return session.client_secret
+}
+
+/**
+ * Get payment method types based on request
+ */
+function getPaymentMethodTypes(paymentMethod: string): string[] {
+  switch (paymentMethod) {
+    case 'card':
+      return ['card']
+    case 'express':
+      return ['apple_pay', 'google_pay', 'paypal', 'amazon_pay']
+    case 'all':
+    default:
+      return ['card', 'apple_pay', 'google_pay', 'paypal', 'amazon_pay', 'link']
+  }
+}
+
+/**
+ * Create a payment intent for direct payment confirmation
+ * Used for Payment Element or Express Checkout Element
+ */
+export async function createPaymentIntent(
+  productId: string,
+  accountId?: string,
+  paymentMethod: 'card' | 'express' | 'all' = 'all'
+) {
+  const product = PRODUCTS.find((p) => p.id === productId)
+  if (!product) {
+    throw new Error(`Product with id "${productId}" not found`)
+  }
+
+  const paymentMethodTypes = getPaymentMethodTypes(paymentMethod)
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: product.priceInCents,
+    currency: 'usd',
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: 'always',
+    },
+    payment_method_types: paymentMethodTypes,
     metadata: {
       productId: product.id,
       accountId: accountId || '',
@@ -34,7 +102,10 @@ export async function startCheckoutSession(productId: string, accountId?: string
     },
   })
 
-  return session.client_secret
+  return {
+    clientSecret: paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+  }
 }
 
 export async function getSessionStatus(sessionId: string) {
@@ -46,10 +117,11 @@ export async function getSessionStatus(sessionId: string) {
     customerEmail: session.customer_details?.email,
     amountTotal: session.amount_total,
     metadata: session.metadata,
+    paymentMethodTypes: session.payment_method_types,
   }
 }
 
-// Decline error messages mapping
+// Decline error messages mapping with express payment method info
 const DECLINE_MESSAGES: Record<string, string> = {
   'card_declined': 'Your card was declined. Please try a different payment method.',
   'insufficient_funds': 'Insufficient funds. Please try a different card or add funds to your account.',
@@ -63,6 +135,10 @@ const DECLINE_MESSAGES: Record<string, string> = {
   'fraudulent': 'This transaction was flagged. Please contact your bank.',
   'do_not_honor': 'Your bank declined this transaction. Please contact them for details.',
   'authentication_required': 'Additional authentication required. Please complete verification.',
+  'apple_pay_error': 'Apple Pay payment failed. Please try a different payment method.',
+  'google_pay_error': 'Google Pay payment failed. Please try a different payment method.',
+  'paypal_error': 'PayPal payment failed. Please check your PayPal account or try another method.',
+  'amazon_pay_error': 'Amazon Pay payment failed. Please check your Amazon account or try another method.',
 }
 
 export async function getDeclineMessage(declineCode: string | null | undefined): Promise<string> {
@@ -101,6 +177,7 @@ export async function listPayments(limit: number = 25) {
     description: payment.description,
     metadata: payment.metadata,
     chargeId: typeof payment.latest_charge === 'string' ? payment.latest_charge : payment.latest_charge?.id,
+    paymentMethod: payment.payment_method_types?.[0] || 'unknown',
   }))
 }
 
@@ -169,3 +246,27 @@ export async function listRefunds(limit: number = 25) {
     paymentIntentId: typeof refund.payment_intent === 'string' ? refund.payment_intent : refund.payment_intent?.id,
   }))
 }
+
+/**
+ * Retrieve payment intent details including payment method
+ */
+export async function getPaymentIntentDetails(paymentIntentId: string) {
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+
+  return {
+    id: paymentIntent.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    status: paymentIntent.status,
+    paymentMethodTypes: paymentIntent.payment_method_types,
+    charges: paymentIntent.charges.data.map(charge => ({
+      id: charge.id,
+      amount: charge.amount,
+      status: charge.status,
+      paymentMethod: charge.payment_method_details,
+      receiptEmail: charge.receipt_email,
+    })),
+    metadata: paymentIntent.metadata,
+  }
+}
+
