@@ -11,6 +11,10 @@ import AdminTransferForm from '@/components/admin/admin-transfer-form'
 import AdminUsersList from '@/components/admin/admin-users-list'
 import AdminTransferHistory from '@/components/admin/admin-transfer-history'
 import { FinancialAccountsDashboard } from '@/components/admin/financial-accounts-dashboard'
+import { CardholdFormComponent } from '@/components/issuing/cardholder-form'
+import { CardIssuanceForm } from '@/components/issuing/card-issuance-form'
+import { CreditPolicyForm } from '@/components/credit/credit-policy-form'
+import { TestUtilitiesPanel } from '@/components/admin/test-utilities-panel'
 
 interface NewUser {
   id: string
@@ -37,7 +41,7 @@ export default function AdminDashboard() {
   const [pendingTransfers, setPendingTransfers] = useState<AdminTransfer[]>([])
   const [transferHistory, setTransferHistory] = useState<AdminTransfer[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts'>('new-users')
+  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts' | 'issuing' | 'credit' | 'test-utilities'>('new-users')
   const supabase = createClient()
 
   // Fetch initial data
@@ -232,6 +236,36 @@ export default function AdminDashboard() {
             >
               Financial Accounts
             </button>
+            <button
+              onClick={() => setActiveTab('issuing')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+                activeTab === 'issuing'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Issuing & Cards
+            </button>
+            <button
+              onClick={() => setActiveTab('credit')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+                activeTab === 'credit'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Credit Management
+            </button>
+            <button
+              onClick={() => setActiveTab('test-utilities')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+                activeTab === 'test-utilities'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Test Utilities
+            </button>
           </div>
 
           <div className="p-6">
@@ -268,6 +302,35 @@ export default function AdminDashboard() {
                 </h2>
                 <FinancialAccountsDashboard adminId="admin-chase-bank" />
               </>
+            ) : activeTab === 'issuing' ? (
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Create Cardholder
+                  </h2>
+                  <CardholdFormComponent />
+                </div>
+                <div className="border-t border-gray-200 pt-8">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Issue Card
+                  </h2>
+                  <CardIssuanceForm />
+                </div>
+              </div>
+            ) : activeTab === 'credit' ? (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Create Credit Policy
+                </h2>
+                <CreditPolicyForm userId="admin-chase-bank" />
+              </div>
+            ) : activeTab === 'test-utilities' ? (
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Test Utilities
+                </h2>
+                <TestUtilitiesPanel adminId="admin-chase-bank" />
+              </div>
             ) : (
               <>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
