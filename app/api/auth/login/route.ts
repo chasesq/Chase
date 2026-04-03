@@ -4,10 +4,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
-    console.log('[v0] Login attempt:', { email, passwordLength: password?.length })
 
     if (!email || !password) {
-      console.log('[v0] Missing email or password')
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -37,10 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (adminAccounts[email]) {
-      console.log('[v0] Admin account found:', email)
       const adminAccount = adminAccounts[email]
       if (password === adminAccount.password) {
-        console.log('[v0] Admin password correct')
         const adminProfile = {
           id: `admin-${email.split('@')[0]}`,
           email: email,
@@ -55,8 +51,6 @@ export async function POST(request: NextRequest) {
           is_admin: true,
           role: adminAccount.role,
         }
-
-        console.log('[v0] Admin login successful:', { email, id: adminProfile.id })
         
         // Set admin session cookie
         const response = NextResponse.json({
@@ -78,15 +72,12 @@ export async function POST(request: NextRequest) {
 
         return response
       } else {
-        console.log('[v0] Admin password incorrect')
         return NextResponse.json(
           { error: 'Invalid email or password' },
           { status: 401 }
         )
       }
     }
-
-    console.log('[v0] Not an admin account, checking regular accounts')
     
     // Check regular user accounts
     const regularAccounts: { [key: string]: { password: string; full_name: string; account_number: string } } = {
@@ -145,7 +136,7 @@ export async function POST(request: NextRequest) {
       { status: 401 }
     )
   } catch (error) {
-    console.error('[v0] Login error:', error)
+    console.error('Login error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

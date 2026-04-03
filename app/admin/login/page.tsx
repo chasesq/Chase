@@ -22,18 +22,13 @@ export default function AdminLoginPage() {
     setIsLoading(true)
 
     try {
-      console.log('[v0] Attempting login with email:', email)
-      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       })
 
-      console.log('[v0] Login response status:', response.status)
-      
       const data = await response.json()
-      console.log('[v0] Login response data:', data)
 
       if (!response.ok) {
         setError(data.error || 'Login failed. Please check your credentials.')
@@ -41,16 +36,15 @@ export default function AdminLoginPage() {
       }
 
       if (data.user && data.user.is_admin) {
-        // Store admin session
+        // Store admin session in localStorage
         localStorage.setItem('admin_session', JSON.stringify(data.user))
-        console.log('[v0] Admin session stored, redirecting to /admin')
+        // Navigate to admin dashboard
         router.push('/admin')
       } else {
         setError('This account does not have admin access.')
       }
     } catch (err) {
-      console.error('[v0] Login error:', err)
-      setError(`An error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError('An error occurred during login. Please try again.')
     } finally {
       setIsLoading(false)
     }
