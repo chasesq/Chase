@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
-import { useNeonAuth } from "@/lib/auth/neon-context"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -39,11 +39,12 @@ const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboar
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
 export default function Page() {
+  const router = useRouter()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<any>(null)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
-
-  const { user, isLoading: isAuthLoading, isAuthenticated, signOut } = useNeonAuth()
 
   const [sendMoneyOpen, setSendMoneyOpen] = useState(false)
   const [depositChecksOpen, setDepositChecksOpen] = useState(false)
@@ -81,13 +82,30 @@ export default function Page() {
   }, [userProfile?.name])
 
   useEffect(() => {
-    const checkAuth = () => {
-      setIsCheckingAuth(isAuthLoading)
+    // Check authentication on mount
+    const checkAuth = async () => {
+      try {
+        const sessionCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session='))
+        
+        if (sessionCookie) {
+          const email = sessionCookie.split('=')[1]
+          setIsAuthenticated(true)
+          setUser({ email, name: email.split('@')[0] })
+        } else {
+          router.push('/auth/login')
+        }
+      } catch (error) {
+        console.error('[v0] Auth check failed:', error)
+        router.push('/auth/login')
+      } finally {
+        setIsCheckingAuth(false)
+      }
     }
-    if (!isAuthLoading) {
-      setIsCheckingAuth(false)
-    }
-  }, [isAuthLoading])
+    
+    checkAuth()
+  }, [router])
 
   useEffect(() => {
     if (isLocked && isAuthenticated) {
@@ -143,12 +161,20 @@ export default function Page() {
         location: "Current Session",
       })
     }
-    await signOut()
+    
+    try {
+      await fetch('/api/auth/sign-out', { method: 'POST' })
+    } catch (error) {
+      console.error('[v0] Logout failed:', error)
+    }
+    
     setActiveView("accounts")
+    setIsAuthenticated(false)
     toast({
       title: "Signed out successfully",
       description: "You have been securely signed out.",
     })
+    router.push('/auth/login')
   }
 
   const handleOpenReceipt = (transactionId: string) => {

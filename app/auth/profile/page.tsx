@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useNeonAuth } from '@/lib/auth/neon-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -22,12 +21,47 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, isAuthenticated, isLoading } = useNeonAuth()
+  const [user, setUser] = useState<any>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    // Check authentication on mount
+    const checkAuth = async () => {
+      try {
+        const sessionCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session='))
+        
+        if (!sessionCookie) {
+          router.push('/auth/login')
+          return
+        }
+        
+        const email = sessionCookie.split('=')[1]
+        setUser({ email, name: email.split('@')[0] })
+        setIsAuthenticated(true)
+        setProfile({
+          id: email.split('@')[0],
+          name: email.split('@')[0],
+          email: email,
+          createdAt: new Date().toISOString(),
+        })
+      } catch (error) {
+        console.error('[v0] Auth check failed:', error)
+        router.push('/auth/login')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    checkAuth()
+  }, [router])
   const [copiedField, setCopiedField] = useState<string | null>(null)
 
   useEffect(() => {

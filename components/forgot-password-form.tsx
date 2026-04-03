@@ -14,15 +14,38 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useNeonAuth } from '@/lib/auth/neon-context'
 
 export function ForgotPasswordForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const { resetPassword, isLoading } = useNeonAuth()
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to send reset email')
+      }
+
+      setSuccess(true)
+      setEmail('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while sending the reset email')
+    } finally {
+      setIsLoading(false)
+    }
+  }
     e.preventDefault()
     setError(null)
 

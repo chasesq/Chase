@@ -5,7 +5,6 @@ import { TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { useNeonAuth } from '@/lib/auth/neon-context'
 
 interface SpendingAnalytic {
   id: string
@@ -19,7 +18,6 @@ interface SpendingAnalytic {
 }
 
 export function SpendingAnalytics() {
-  const { user } = useNeonAuth()
   const [analytics, setAnalytics] = useState<SpendingAnalytic[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [totalSpent, setTotalSpent] = useState(0)
@@ -27,7 +25,6 @@ export function SpendingAnalytics() {
   const currentYear = new Date().getFullYear()
 
   useEffect(() => {
-    if (user) {
       loadAnalytics()
     }
   }, [user])
