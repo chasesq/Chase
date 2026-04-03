@@ -54,7 +54,7 @@ export default function Page() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={() => router.push('/')} />
+    return <LoginPage />
   }
 
   return (

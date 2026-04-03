@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking" // Assuming this is where useBanking is imported
 
 interface LoginPageProps {
-  onLogin: () => void
+  onLogin?: () => void
 }
 
 type ModalView =
