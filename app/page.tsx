@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
+import { useNeonAuth } from "@/lib/auth/neon-context"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -38,10 +39,11 @@ const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboar
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
 export default function Page() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
+
+  const { user, isLoading: isAuthLoading, isAuthenticated, signOut } = useNeonAuth()
 
   const [sendMoneyOpen, setSendMoneyOpen] = useState(false)
   const [depositChecksOpen, setDepositChecksOpen] = useState(false)
@@ -80,28 +82,22 @@ export default function Page() {
 
   useEffect(() => {
     const checkAuth = () => {
-      const profile = localStorage.getItem("user_profile")
-      if (profile) {
-        try {
-          setIsLoggedIn(true)
-        } catch (err) {
-          setIsLoggedIn(false)
-        }
-      }
+      setIsCheckingAuth(isAuthLoading)
+    }
+    if (!isAuthLoading) {
       setIsCheckingAuth(false)
     }
-    checkAuth()
-  }, [])
+  }, [isAuthLoading])
 
   useEffect(() => {
-    if (isLocked && isLoggedIn) {
+    if (isLocked && isAuthenticated) {
       console.log("[v0] App is locked, showing unlock screen")
       setShowBiometricPrompt(true)
     }
-  }, [isLocked, isLoggedIn])
+  }, [isLocked, isAuthenticated])
 
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!isAuthenticated) return
 
     const deviceInfo = navigator.userAgent.includes("Mobile") ? "Mobile Device" : "Desktop Browser"
 
@@ -133,14 +129,13 @@ export default function Page() {
     return () => {
       clearTimeout(welcomeTimer)
     }
-  }, [isLoggedIn, addActivity, addLoginHistory, toast, getUserFirstName])
+  }, [isAuthenticated, addActivity, addLoginHistory, toast, getUserFirstName])
 
   const handleLogin = () => {
-    setIsLoggedIn(true)
-    localStorage.setItem("chase_logged_in", "true")
+    // Neon Auth handles login - just continue
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (addActivity) {
       addActivity({
         action: "Signed out",
@@ -148,19 +143,7 @@ export default function Page() {
         location: "Current Session",
       })
     }
-    setIsLoggedIn(false)
-    // Clear all session data on logout
-    localStorage.removeItem("user_profile")
-    localStorage.removeItem("userEmail")
-    localStorage.removeItem("chase_logged_in")
-    localStorage.removeItem("chase_user_id")
-    localStorage.removeItem("chase_user_data")
-    localStorage.removeItem("chase_user_role")
-    localStorage.removeItem("chase_user_name")
-    localStorage.removeItem("chase_user_email")
-    localStorage.removeItem("chase_user_accounts")
-    localStorage.removeItem("chase_session_token")
-    localStorage.removeItem("chase_last_login")
+    await signOut()
     setActiveView("accounts")
     toast({
       title: "Signed out successfully",
@@ -305,7 +288,7 @@ export default function Page() {
     )
   }
 
-  if (!isLoggedIn) {
+  if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />
   }
 
@@ -351,7 +334,7 @@ export default function Page() {
         <main className="px-4 pt-5 touch-pan-y">
           <div className="mb-5">
             <h1 className="text-2xl font-bold text-foreground">
-              {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "User"}
+              {getGreeting()}, {user?.name?.split(" ")[0] || userProfile?.full_name?.split(" ")[0] || "User"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {userProfile?.account_number && `Account: ${userProfile.account_number} · `}

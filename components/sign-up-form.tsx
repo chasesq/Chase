@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 
@@ -15,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useNeonAuth } from '@/lib/auth/neon-context'
 
 export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [name, setName] = useState('')
@@ -23,56 +23,28 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const { signUp, isLoading } = useNeonAuth()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
 
     // Validate passwords match
     if (password !== repeatPassword) {
       setError('Passwords do not match')
-      setIsLoading(false)
       return
     }
 
     // Validate password strength
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
-      setIsLoading(false)
       return
     }
 
     try {
-      const response = await fetch('/api/auth/sign-up', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          phone_number: phone,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Sign up failed')
-      }
-
-      // Redirect to MFA setup with user_id, or to success if user_id not provided
-      const redirectUrl = data.user_id 
-        ? `/auth/mfa-setup?user_id=${encodeURIComponent(data.user_id)}`
-        : '/auth/sign-up-success'
-      
-      router.push(redirectUrl)
+      await signUp(email, password, name)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during sign up')
-    } finally {
-      setIsLoading(false)
     }
   }
 

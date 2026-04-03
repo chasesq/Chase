@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 
@@ -15,42 +14,22 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useNeonAuth } from '@/lib/auth/neon-context'
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const { signIn, isLoading } = useNeonAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Login failed')
-      }
-
-      // Store user profile in localStorage
-      localStorage.setItem('user_profile', JSON.stringify(data.user))
-      localStorage.setItem('userEmail', email)
-
-      // Redirect to dashboard on success
-      router.push('/')
+      await signIn(email, password)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred during sign in. Please try again.')
-    } finally {
-      setIsLoading(false)
     }
   }
 
