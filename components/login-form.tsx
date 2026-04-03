@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [accountName, setAccountName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -25,7 +26,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       const response = await fetch('/api/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, accountName }),
       })
 
       if (!response.ok) {
@@ -54,6 +55,19 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="h-12 border-gray-200 focus:border-blue-500"
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="accountName" className="text-gray-700 font-medium">Account Name</Label>
+          <Input
+            id="accountName"
+            type="text"
+            placeholder="e.g., Chase Admin"
+            value={accountName}
+            onChange={(e) => setAccountName(e.target.value)}
             className="h-12 border-gray-200 focus:border-blue-500"
             disabled={isLoading}
           />

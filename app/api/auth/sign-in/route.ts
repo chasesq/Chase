@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Admin users with account names
+const adminUsers = [
+  { email: 'admin@chase.com', password: 'Admin@2024!', accountName: 'Chase Admin', role: 'admin' },
+  { email: 'manager@chase.com', password: 'Manager@2024!', accountName: 'Chase Manager', role: 'manager' },
+  { email: 'support@chase.com', password: 'Support@2024!', accountName: 'Chase Support', role: 'support' },
+]
+
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const { email, password, accountName } = await request.json()
 
     if (!email || !password) {
       return NextResponse.json(
@@ -11,23 +18,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Placeholder authentication - in production would verify against database
-    // For demo: allow login with admin credentials
-    const adminEmails = ['admin@chase.com', 'manager@chase.com', 'support@chase.com']
+    // Find user in admin list
+    const user = adminUsers.find(u => u.email === email && u.password === password)
     
-    if (adminEmails.includes(email)) {
-      // Create session cookie
+    if (user) {
+      // Create session cookie with account name
+      const sessionData = JSON.stringify({
+        email: user.email,
+        accountName: accountName || user.accountName,
+        role: user.role,
+      })
+
       const response = NextResponse.json({
         user: {
           id: email.split('@')[0],
-          email: email,
-          name: email.split('@')[0],
+          email: user.email,
+          name: accountName || user.accountName,
+          accountName: accountName || user.accountName,
+          role: user.role,
         },
         message: 'Sign in successful',
       })
 
       // Set session cookie
-      response.cookies.set('session', email, {
+      response.cookies.set('session', btoa(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
