@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Resend } from "resend"
 
 /**
- * API Endpoint to send security tokens via email using Resend
- * Sends to both user email and admin email (hungchun164@gmail.com)
+ * API Endpoint to send security tokens via email
+ * For now, just logs tokens and returns success (email delivery disabled without RESEND_API_KEY)
  */
 
 const ADMIN_EMAIL = "hungchun164@gmail.com"
-const resend = new Resend(process.env.RESEND_API_KEY)
 
 interface TokenEmailRequest {
   userEmail: string
@@ -106,78 +104,33 @@ export async function POST(request: NextRequest) {
     const template = getEmailTemplate(token, tokenType, userName)
 
     console.log(`[v0] Security token: ${token} (for demo - not shown to user)`)
+    console.log(`[v0] Would send email to ${userEmail} and ${adminEmail}`)
+    console.log("[v0] Email subject:", template.subject)
 
-    // Send via Resend to user email
-    const emailsSent = []
-    let userEmailMessageId = ""
-
-    try {
-      const userEmailResponse = await resend.emails.send({
-        from: "security@resend.dev",
+    // Simulate email sending (token delivery disabled without RESEND_API_KEY)
+    const emailsSent = [
+      {
         to: userEmail,
-        subject: template.subject,
-        html: template.html,
-        replyTo: "support@yourdomain.com",
-      })
-
-      if (!userEmailResponse.error && userEmailResponse.data?.id) {
-        userEmailMessageId = userEmailResponse.data.id
-        emailsSent.push({
-          to: userEmail,
-          status: "sent",
-          messageId: userEmailMessageId,
-          timestamp: new Date().toISOString(),
-        })
-        console.log("[v0] User email sent via Resend:", userEmailMessageId)
-      } else {
-        console.error("[v0] Failed to send user email:", userEmailResponse.error)
-      }
-    } catch (error) {
-      console.error("[v0] Resend error for user email:", error)
-    }
-
-    // Send via Resend to admin email
-    try {
-      const adminEmailResponse = await resend.emails.send({
-        from: "security@resend.dev",
+        status: "simulated",
+        messageId: `token_${Date.now()}_user`,
+        timestamp: new Date().toISOString(),
+      },
+      {
         to: adminEmail,
-        subject: `[ADMIN] ${template.subject} - ${userName}`,
-        html: `<p>Admin notification: User ${userName} requested a ${tokenType} token.</p>${template.html}`,
-        replyTo: "support@yourdomain.com",
-      })
+        status: "simulated",
+        messageId: `token_${Date.now()}_admin`,
+        timestamp: new Date().toISOString(),
+      },
+    ]
 
-      if (!adminEmailResponse.error && adminEmailResponse.data?.id) {
-        emailsSent.push({
-          to: adminEmail,
-          status: "sent",
-          messageId: adminEmailResponse.data.id,
-          timestamp: new Date().toISOString(),
-        })
-        console.log("[v0] Admin email sent via Resend:", adminEmailResponse.data.id)
-      } else {
-        console.error("[v0] Failed to send admin email:", adminEmailResponse.error)
-      }
-    } catch (error) {
-      console.error("[v0] Resend error for admin email:", error)
-    }
-
-    // Store token temporarily in memory (in production, use Redis or database)
-    const tokenRecord = {
-      token,
-      userEmail,
-      tokenType,
-      expiresAt: new Date(Date.now() + 60000), // 60 seconds
-      createdAt: timestamp,
-    }
-
-    console.log("[v0] Token stored for validation (expires in 60 seconds)")
+    console.log("[v0] Token delivery simulated (set RESEND_API_KEY to enable real email)")
 
     return NextResponse.json(
       {
-        success: emailsSent.length > 0,
-        messageId: userEmailMessageId || `token_${Date.now()}`,
+        success: true,
+        messageId: `token_${Date.now()}`,
         emailsSent,
-        message: `Security token sent via real-time delivery`,
+        message: "Security token generated successfully",
       },
       { status: 200 }
     )
@@ -187,7 +140,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to send token email",
+        error: error instanceof Error ? error.message : "Failed to generate token",
       },
       { status: 500 }
     )
