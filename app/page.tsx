@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
-
-const LoginPage = dynamic(() => import('@/components/login-page').then(m => ({ default: m.LoginPage })), { ssr: false })
 
 export default function Page() {
   const router = useRouter()
@@ -53,8 +50,9 @@ export default function Page() {
     )
   }
 
+  // Unauthenticated users are redirected to /auth/login by useEffect
   if (!isAuthenticated) {
-    return <LoginPage />
+    return null
   }
 
   return (
