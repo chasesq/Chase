@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 import { cn } from '@/lib/utils'
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useNeonAuth } from '@/lib/auth/neon-context'
 
 export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [name, setName] = useState('')
@@ -23,7 +23,8 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
   const [password, setPassword] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const { signUp, isLoading } = useNeonAuth()
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,6 +39,30 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     // Validate password strength
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, phone_number: phone }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.message || 'Sign up failed')
+      }
+
+      // Success - redirect to dashboard
+      router.push('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred during sign up')
+    } finally {
+      setIsLoading(false)
+    }
+  }
       return
     }
 

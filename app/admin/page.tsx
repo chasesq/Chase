@@ -2,32 +2,50 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useNeonAuth } from '@/lib/auth/neon-context'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LogoutButton } from '@/components/logout-button'
 import { Shield, Users, BarChart3, Settings, FileText } from 'lucide-react'
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated } = useNeonAuth()
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    // Check if user is authenticated and has admin role
-    if (!isAuthenticated) {
-      router.push('/auth/login')
-      return
+    // Check session from cookies
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/auth/get-session')
+        if (!response.ok) {
+          router.push('/auth/login')
+          return
+        }
+        
+        // For demo, check if logged in as admin
+        const sessionCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session='))
+        
+        if (sessionCookie) {
+          const adminEmails = ['admin@chase.com', 'manager@chase.com']
+          const email = sessionCookie.split('=')[1]
+          if (adminEmails.includes(email)) {
+            setIsAdmin(true)
+            setUser({ email, name: email.split('@')[0] })
+            return
+          }
+        }
+        
+        router.push('/')
+      } catch (error) {
+        console.error('[v0] Auth check failed:', error)
+        router.push('/auth/login')
+      }
     }
-
-    // Check if user is admin by their email
-    const adminEmails = ['admin@chase.com', 'manager@chase.com']
-    if (user?.email && adminEmails.includes(user.email)) {
-      setIsAdmin(true)
-    } else {
-      router.push('/')
-    }
-  }, [isAuthenticated, user, router])
+    
+    checkAuth()
+  }, [router])
 
   if (!isAdmin) {
     return (
