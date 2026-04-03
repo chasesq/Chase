@@ -223,7 +223,7 @@ export function LoginPage() {
 
     try {
       // Call backend API for login
-      const loginResponse = await fetch('/api/auth/login', {
+      const loginResponse = await fetch('/api/auth/sign-in', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -235,7 +235,7 @@ export function LoginPage() {
       const loginData = await loginResponse.json()
 
       if (!loginResponse.ok) {
-        throw new Error(loginData.error || 'Login failed')
+        throw new Error(loginData.message || 'Login failed')
       }
 
       console.log("[v0] Login response:", loginData)
@@ -266,31 +266,10 @@ export function LoginPage() {
       }
 
       // Direct login successful
-      if (loginData.success && loginData.user) {
+      if (loginData.user) {
         console.log("[v0] Login successful, user ID:", loginData.user.id)
         
-        // Create session with full user data
-        localStorage.setItem("chase_logged_in", "true")
-        localStorage.setItem("chase_remember_me", rememberMe ? "true" : "false")
-        localStorage.setItem("chase_last_login", new Date().toISOString())
-        localStorage.setItem("chase_session_token", `token_${Date.now()}`)
-        localStorage.setItem("chase_user_id", loginData.user.id)
-        
-        // Store user data from backend
-        if (loginData.user) {
-          localStorage.setItem("chase_user_data", JSON.stringify(loginData.user))
-          localStorage.setItem("chase_user_role", loginData.user.role || "user")
-          localStorage.setItem("chase_user_name", loginData.user.full_name || "")
-          localStorage.setItem("chase_user_email", loginData.user.email || "")
-          localStorage.setItem("user_profile", JSON.stringify(loginData.user))
-        }
-
-        if (rememberMe) {
-          localStorage.setItem("chase_username", username)
-        } else {
-          localStorage.removeItem("chase_username")
-        }
-
+        // Session is handled by the API via HTTP-only cookie
         toast({
           title: "Welcome back",
           description: "You have successfully signed in to Chase.",
