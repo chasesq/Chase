@@ -11,19 +11,23 @@ export default function AdminDashboard() {
   const router = useRouter()
   const [isAdmin, setIsAdmin] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Check session from localStorage
-    const checkAuth = async () => {
+    const checkAuth = () => {
       try {
         const adminSession = localStorage.getItem('admin_session')
+        console.log('[v0] Admin session check:', adminSession ? 'Found' : 'Not found')
         
         if (!adminSession) {
+          console.log('[v0] No admin session, redirecting to login')
           router.push('/admin/login')
           return
         }
 
         const adminUser = JSON.parse(adminSession)
+        console.log('[v0] Parsed admin user:', adminUser)
         
         if (adminUser && adminUser.is_admin) {
           setIsAdmin(true)
@@ -32,9 +36,11 @@ export default function AdminDashboard() {
             name: adminUser.full_name,
             role: adminUser.role
           })
+          setIsLoading(false)
           return
         }
         
+        console.log('[v0] User is not admin, redirecting')
         router.push('/admin/login')
       } catch (error) {
         console.error('[v0] Auth check failed:', error)
@@ -42,8 +48,23 @@ export default function AdminDashboard() {
       }
     }
     
-    checkAuth()
+    // Ensure localStorage is available before checking
+    if (typeof window !== 'undefined') {
+      checkAuth()
+    }
   }, [router])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="mx-auto h-12 w-12 text-primary mb-4 animate-pulse" />
+          <h1 className="text-2xl font-bold text-foreground mb-2">Verifying Admin Access</h1>
+          <p className="text-muted-foreground">Please wait...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!isAdmin) {
     return (
