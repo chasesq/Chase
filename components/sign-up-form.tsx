@@ -63,29 +63,6 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       setIsLoading(false)
     }
   }
-      return
-    }
-
-    try {
-      const response = await fetch('/api/auth/sign-up', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, phone_number: phone }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.message || 'Sign up failed')
-      }
-
-      // Success - redirect to dashboard
-      router.push('/')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during sign up')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
