@@ -37,6 +37,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
       setError(err instanceof Error ? err.message : 'An error occurred while sending the reset email')
     } finally {
       setIsLoading(false)
+    }
   }
 
   return (
