@@ -13,34 +13,32 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
-    // Check session from cookies
+    // Check session from localStorage
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/get-session')
-        if (!response.ok) {
-          router.push('/auth/login')
+        const adminSession = localStorage.getItem('admin_session')
+        
+        if (!adminSession) {
+          router.push('/admin/login')
+          return
+        }
+
+        const adminUser = JSON.parse(adminSession)
+        
+        if (adminUser && adminUser.is_admin) {
+          setIsAdmin(true)
+          setUser({ 
+            email: adminUser.email, 
+            name: adminUser.full_name,
+            role: adminUser.role
+          })
           return
         }
         
-        // For demo, check if logged in as admin
-        const sessionCookie = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('session='))
-        
-        if (sessionCookie) {
-          const adminEmails = ['admin@chase.com', 'manager@chase.com']
-          const email = sessionCookie.split('=')[1]
-          if (adminEmails.includes(email)) {
-            setIsAdmin(true)
-            setUser({ email, name: email.split('@')[0] })
-            return
-          }
-        }
-        
-        router.push('/')
+        router.push('/admin/login')
       } catch (error) {
         console.error('[v0] Auth check failed:', error)
-        router.push('/auth/login')
+        router.push('/admin/login')
       }
     }
     
@@ -77,7 +75,8 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4">
             <div className="text-right text-sm">
               <p className="text-foreground font-medium">{user?.name}</p>
-              <p className="text-muted-foreground">{user?.email}</p>
+              <p className="text-muted-foreground text-xs">{user?.role || 'Admin'}</p>
+              <p className="text-muted-foreground text-xs">{user?.email}</p>
             </div>
             <LogoutButton variant="outline" />
           </div>

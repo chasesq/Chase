@@ -11,8 +11,18 @@ export function LogoutButton({ className, variant = 'default', ...props }: React
   const handleLogout = async () => {
     setIsLoading(true)
     try {
+      // Clear admin session if exists
+      localStorage.removeItem('admin_session')
+      
+      // Call sign out endpoint
       await fetch('/api/auth/sign-out', { method: 'POST' })
-      router.push('/auth/login')
+      
+      // Redirect based on current path
+      if (window.location.pathname.startsWith('/admin')) {
+        router.push('/admin/login')
+      } else {
+        router.push('/auth/login')
+      }
     } catch (error) {
       console.error('Logout failed:', error)
     } finally {

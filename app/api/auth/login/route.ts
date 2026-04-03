@@ -12,11 +12,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check for admin accounts first (before creating Supabase client)
-    const adminAccounts: { [key: string]: { password: string; full_name: string; balance: number } } = {
+    // Check for admin accounts first
+    const adminAccounts: { [key: string]: { password: string; full_name: string; role: string; balance: number } } = {
       'admin@chasebank.com': {
         password: 'ChaseAdmin2024',
-        full_name: 'Chase Bank',
+        full_name: 'Chase Bank Administrator',
+        role: 'Super Admin',
+        balance: 500000,
+      },
+      'manager@chase.com': {
+        password: 'Manager@2024!',
+        full_name: 'Chase Manager',
+        role: 'Manager',
+        balance: 250000,
+      },
+      'support@chase.com': {
+        password: 'Support@2024!',
+        full_name: 'Chase Support',
+        role: 'Support Agent',
         balance: 100000,
       },
     }
@@ -25,23 +38,39 @@ export async function POST(request: NextRequest) {
       const adminAccount = adminAccounts[email]
       if (password === adminAccount.password) {
         const adminProfile = {
-          id: 'admin-chase-bank',
+          id: `admin-${email.split('@')[0]}`,
           email: email,
-          username: 'chasebank_admin',
+          username: email.split('@')[0],
           full_name: adminAccount.full_name,
           phone: '+1-866-935-9935',
           address: '270 Park Avenue, New York, NY 10017',
           member_since: '2020-01-15',
-          tier: 'admin',
-          account_number: 'ADMIN-0001',
+          tier: adminAccount.role.toLowerCase(),
+          account_number: `ADMIN-${email.split('@')[0].toUpperCase()}`,
           balance: adminAccount.balance,
           is_admin: true,
+          role: adminAccount.role,
         }
 
-        return NextResponse.json({
+        // Set admin session cookie
+        const response = NextResponse.json({
           success: true,
           user: adminProfile,
         })
+        
+        // Set session cookie with admin flag
+        response.cookies.set('session', JSON.stringify(adminProfile), {
+          httpOnly: true,
+          maxAge: 86400 * 7, // 7 days
+          path: '/',
+        })
+        response.cookies.set('admin_session', 'true', {
+          httpOnly: true,
+          maxAge: 86400 * 7,
+          path: '/',
+        })
+
+        return response
       } else {
         return NextResponse.json(
           { error: 'Invalid email or password' },
@@ -50,59 +79,62 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const supabase = createServiceClient()
-
-    // Query user from database
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, email, username, full_name, phone, address, member_since, tier, account_number, balance')
-      .eq('email', email)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
+    // Check regular user accounts
+    const regularAccounts: { [key: string]: { password: string; full_name: string; account_number: string } } = {
+      'linhuang011@gmail.com': {
+        password: 'Lin2000',
+        full_name: 'Lin Huang',
+        account_number: 'ACC-001',
+      },
+      'johnnymercer1122@gmail.com': {
+        password: 'Johnny11',
+        full_name: 'Johnny Mercer',
+        account_number: 'ACC-002',
+      },
     }
 
-    // Verify password (in production, use bcrypt comparison)
-    // For now, we'll do a simple check - in production this should be bcrypt.compare
-    const passwordHashMap: { [key: string]: string } = {
-      'linhuang011@gmail.com': '$2b$10$8q6VQU.8n7K1R0P8V9L2wubBnfJ5l5Y3V3H5C0U0R1E9X0M0Z9R6K', // Lin2000
-      'johnnymercer1122@gmail.com': '$2b$10$9r7WRV.9o8L2S1Q9W0M3xvcCogK6m6Z4W4I6D1V1S2F0Y1N1A0S7L', // Johnny11
+    if (regularAccounts[email]) {
+      const account = regularAccounts[email]
+      if (password === account.password) {
+        const userProfile = {
+          id: email.split('@')[0],
+          email: email,
+          username: email.split('@')[0],
+          full_name: account.full_name,
+          phone: '+1-555-0100',
+          address: '123 Main St, City, State 12345',
+          member_since: '2023-01-15',
+          tier: 'regular',
+          account_number: account.account_number,
+          balance: 5000,
+          is_admin: false,
+        }
+
+        // Set regular user session cookie
+        const response = NextResponse.json({
+          success: true,
+          user: userProfile,
+        })
+        
+        response.cookies.set('session', JSON.stringify(userProfile), {
+          httpOnly: true,
+          maxAge: 86400 * 7,
+          path: '/',
+        })
+
+        return response
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid email or password' },
+          { status: 401 }
+        )
+      }
     }
 
-    // Note: In production, use bcrypt.compare(password, user.password_hash)
-    // This is a simplified check for demo purposes
-    const isValidPassword = password === 'Lin2000' && email === 'linhuang011@gmail.com' ||
-                           password === 'Johnny11' && email === 'johnnymercer1122@gmail.com'
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-
-    // Create session and return user profile
-    const userProfile = {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      full_name: user.full_name,
-      phone: user.phone,
-      address: user.address,
-      member_since: user.member_since,
-      tier: user.tier,
-      account_number: user.account_number,
-      balance: user.balance || 0,
-    }
-
-    return NextResponse.json({
-      success: true,
-      user: userProfile,
-    })
+    return NextResponse.json(
+      { error: 'Invalid email or password' },
+      { status: 401 }
+    )
   } catch (error) {
     console.error('[v0] Login error:', error)
     return NextResponse.json(
