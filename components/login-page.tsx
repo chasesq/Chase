@@ -26,10 +26,6 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 
-interface LoginPageProps {
-  onLogin?: () => void
-}
-
 type ModalView =
   | "none"
   | "forgot"
@@ -59,7 +55,7 @@ interface StoredUser {
   createdAt: string
 }
 
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
