@@ -1,11 +1,17 @@
-import { auth } from '@/lib/auth/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    // Call the better-auth sign-out endpoint
-    const response = await auth.api.signOut({
-      headers: request.headers,
+    // Clear session cookie
+    const response = NextResponse.json({
+      message: 'Sign out successful',
+    })
+
+    response.cookies.set('session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0, // Clear the cookie
     })
 
     return response

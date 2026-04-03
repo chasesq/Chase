@@ -1,23 +1,27 @@
-import { auth } from '@/lib/auth/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get the current session
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    })
+    // Get session from cookies or headers
+    const cookies = request.headers.get('cookie') || ''
+    const sessionMatch = cookies.match(/session=([^;]+)/)
+    const sessionToken = sessionMatch ? sessionMatch[1] : null
 
-    if (!session) {
+    if (!sessionToken) {
       return NextResponse.json(
         { message: 'No active session' },
         { status: 401 }
       )
     }
 
+    // In a real implementation, you would validate the session token
+    // and fetch the user data from the database
+    // For now, return a placeholder response
     return NextResponse.json({
-      user: session.user,
-      session: session.session,
+      user: null,
+      session: null,
+    }, {
+      status: 401,
     })
   } catch (error) {
     console.error('[v0] Get session error:', error)
