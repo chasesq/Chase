@@ -216,7 +216,7 @@ export function StripeDashboardDrawer({ open, onOpenChange }: StripeDashboardDra
                   <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8">
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
-                  <DrawerTitle className="text-lg font-semibold">Stripe Dashboard</DrawerTitle>
+                  <DrawerTitle className="text-lg font-semibold">Dashboard</DrawerTitle>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
