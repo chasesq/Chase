@@ -25,7 +25,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { useBanking } from "@/hooks/use-banking" // Assuming this is where useBanking is imported
 
 interface LoginPageProps {
   onLogin?: () => void
@@ -70,8 +69,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState("")
   const [modalView, setModalView] = useState<ModalView>("none")
   const { toast } = useToast()
-
-  const { appSettings, settingsEnforcer } = useBanking()
 
   // Token Authentication States
   const [tokenCode, setTokenCode] = useState("")
