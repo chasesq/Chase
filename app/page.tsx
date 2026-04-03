@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const LoginPage = dynamic(() => import('@/components/login-page').then(m => ({ default: m.LoginPage })), { ssr: false })
 
 export default function Page() {
   const router = useRouter()
@@ -20,12 +23,9 @@ export default function Page() {
           const email = sessionCookie.split('=')[1]
           setIsAuthenticated(true)
           setUser({ email, name: email.split('@')[0] })
-        } else {
-          router.push('/auth/login')
         }
       } catch (error) {
         console.error('[v0] Auth check failed:', error)
-        router.push('/auth/login')
       } finally {
         setIsCheckingAuth(false)
       }
@@ -36,7 +36,8 @@ export default function Page() {
 
   const handleLogout = async () => {
     await fetch('/api/auth/sign-out', { method: 'POST' })
-    router.push('/auth/login')
+    setIsAuthenticated(false)
+    setUser(null)
   }
 
   if (isCheckingAuth) {
@@ -50,9 +51,9 @@ export default function Page() {
     )
   }
 
-  // Unauthenticated users are redirected to /auth/login by useEffect
+  // Show login page for unauthenticated users
   if (!isAuthenticated) {
-    return null
+    return <LoginPage />
   }
 
   return (
