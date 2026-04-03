@@ -101,7 +101,7 @@ export default function Page() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={() => {}} />
+    return <LoginPage />
   }
 
   return (
