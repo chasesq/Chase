@@ -30,7 +30,6 @@ const TransferDrawer = dynamic(() => import("@/components/transfer-drawer").then
 const WireDrawer = dynamic(() => import("@/components/wire-drawer").then(m => ({ default: m.WireDrawer })), { ssr: false })
 const TransactionReceiptModal = dynamic(() => import("@/components/transaction-receipt-modal").then(m => ({ default: m.TransactionReceiptModal })), { ssr: false })
 const TransactionsDrawer = dynamic(() => import("@/components/transactions-drawer").then(m => ({ default: m.TransactionsDrawer })), { ssr: false })
-const LoginPage = dynamic(() => import("@/components/login-page").then(m => ({ default: m.LoginPage })), { ssr: false })
 const DisputeTransactionDrawer = dynamic(() => import("@/components/dispute-transaction-drawer").then(m => ({ default: m.DisputeTransactionDrawer })), { ssr: false })
 const ViewTransition = dynamic(() => import("@/components/view-transition").then(m => ({ default: m.ViewTransition })), { ssr: false })
 const AddFundsDrawer = dynamic(() => import("@/components/add-funds-drawer").then(m => ({ default: m.AddFundsDrawer })), { ssr: false })
@@ -315,7 +314,7 @@ export default function Page() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />
+    return null // Will redirect in useEffect
   }
 
   if (showBiometricPrompt) {
