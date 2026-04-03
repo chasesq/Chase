@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { BankingProvider } from "@/lib/banking-context"
 import { RealtimeProvider } from "@/lib/realtime-orchestrator"
 import { NeonAuthProvider } from "@/lib/auth/neon-context"
+import { GlobalLoadingProvider } from "@/lib/global-loading-context"
+import { GlobalLoadingOverlay } from "@/components/global-loading-overlay"
 import { ErrorBoundary } from "@/components/error-boundary"
 import "./globals.css"
 
@@ -55,16 +57,19 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased overflow-x-hidden overscroll-none touch-pan-y">
         <ErrorBoundary>
-          <NeonAuthProvider>
-            <RealtimeProvider>
-              <BankingProvider>
-                {children}
-                <Toaster />
-                <Analytics />
-                <SpeedInsights />
-              </BankingProvider>
-            </RealtimeProvider>
-          </NeonAuthProvider>
+          <GlobalLoadingProvider>
+            <NeonAuthProvider>
+              <RealtimeProvider>
+                <BankingProvider>
+                  {children}
+                  <GlobalLoadingOverlay />
+                  <Toaster />
+                  <Analytics />
+                  <SpeedInsights />
+                </BankingProvider>
+              </RealtimeProvider>
+            </NeonAuthProvider>
+          </GlobalLoadingProvider>
         </ErrorBoundary>
       </body>
     </html>

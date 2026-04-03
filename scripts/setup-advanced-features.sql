@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Notifications Table
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   type VARCHAR(50) NOT NULL CHECK (type IN ('transaction', 'security', 'promotion', 'billing', 'general')),
@@ -28,7 +28,7 @@ CREATE INDEX idx_notifications_is_read ON notifications(user_id, is_read);
 -- Notification Preferences
 CREATE TABLE IF NOT EXISTS notification_preferences (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL UNIQUE REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   transaction_alerts BOOLEAN DEFAULT TRUE,
   security_alerts BOOLEAN DEFAULT TRUE,
   promotional BOOLEAN DEFAULT TRUE,
@@ -48,7 +48,7 @@ CREATE INDEX idx_notification_preferences_user_id ON notification_preferences(us
 -- Spending Analytics Cache
 CREATE TABLE IF NOT EXISTS spending_analytics (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   period_month INTEGER NOT NULL,
   period_year INTEGER NOT NULL,
   category VARCHAR(100) NOT NULL,
@@ -69,7 +69,7 @@ CREATE INDEX idx_spending_analytics_period ON spending_analytics(user_id, period
 -- Money Transfer Templates
 CREATE TABLE IF NOT EXISTS transfer_templates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   recipient_name VARCHAR(255) NOT NULL,
   recipient_account VARCHAR(50) NOT NULL,
@@ -91,7 +91,7 @@ CREATE INDEX idx_transfer_templates_favorite ON transfer_templates(user_id, is_f
 -- Bill Payments
 CREATE TABLE IF NOT EXISTS bills (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   payee_name VARCHAR(255) NOT NULL,
   payee_account VARCHAR(50),
   amount DECIMAL(12, 2) NOT NULL,
@@ -113,7 +113,7 @@ CREATE INDEX idx_bills_status ON bills(user_id, status);
 CREATE TABLE IF NOT EXISTS bill_payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   bill_id UUID NOT NULL REFERENCES bills(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   amount DECIMAL(12, 2) NOT NULL,
   paid_date TIMESTAMP WITH TIME ZONE NOT NULL,
   confirmation_number VARCHAR(100),
@@ -127,7 +127,7 @@ CREATE INDEX idx_bill_payments_user_id ON bill_payments(user_id);
 -- Generated Reports
 CREATE TABLE IF NOT EXISTS generated_reports (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   report_type VARCHAR(100) NOT NULL CHECK (report_type IN ('transaction_history', 'spending_summary', 'tax_summary', 'annual_summary')),
   date_from DATE NOT NULL,
   date_to DATE NOT NULL,
@@ -147,7 +147,7 @@ CREATE INDEX idx_generated_reports_created_at ON generated_reports(user_id, crea
 -- Report Scheduling
 CREATE TABLE IF NOT EXISTS report_schedules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL UNIQUE REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   report_type VARCHAR(100) NOT NULL,
   frequency VARCHAR(50) CHECK (frequency IN ('weekly', 'monthly', 'quarterly', 'yearly')),
   send_email BOOLEAN DEFAULT TRUE,
@@ -163,7 +163,7 @@ CREATE INDEX idx_report_schedules_user_id ON report_schedules(user_id);
 -- Transaction Category Mappings (for spending analytics)
 CREATE TABLE IF NOT EXISTS transaction_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES neon_auth.users(id) ON DELETE CASCADE,
   transaction_id VARCHAR(255) NOT NULL,
   category VARCHAR(100) NOT NULL,
   confidence_score DECIMAL(3, 2),
