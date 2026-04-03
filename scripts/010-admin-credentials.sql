@@ -18,19 +18,19 @@ CREATE INDEX IF NOT EXISTS admin_credentials_status_idx ON public.admin_credenti
 
 -- Insert default admin accounts with bcrypt hashed passwords
 -- Password hashes generated with bcryptjs (cost factor: 10)
--- admin@chase.com / AdminPass123!
+-- admin@chase.com / Admin@123456
 INSERT INTO public.admin_credentials (email, password_hash, name, status)
 VALUES 
   (
     'admin@chase.com',
-    '$2a$10$XK7qzE5k4E4K4K4K4K4K4O8q8q8q8q8q8q8q8q8q8q8q8q8q8q8q8',
+    '$2b$10$/lOQs1HWJnWeC2HNUyeuFu0WLIWsr0Bv9TBl3ijqKv0sUf1p0pV8W',
     'Chase Admin',
     'active'
   ),
-  -- super_admin@chase.com / SuperAdmin123!
+  -- super_admin@chase.com / SuperAdmin@789012
   (
     'super_admin@chase.com',
-    '$2a$10$VL9pjK8j8K8K8K8K8K8K8Q7p7p7p7p7p7p7p7p7p7p7p7p7p7p7p7p',
+    '$2b$10$k4J0t9N6uKe8GM9mlybbDeqCtFlqZm2HkxUwL.6KWXTr/hKu0k2Jq',
     'Chase Super Admin',
     'active'
   )
