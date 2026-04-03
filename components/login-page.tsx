@@ -2,6 +2,7 @@
 
 import type React from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 import { useState, useEffect } from "react"
 import {
@@ -56,6 +57,7 @@ interface StoredUser {
 }
 
 export function LoginPage() {
+  const router = useRouter()
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -295,7 +297,7 @@ export function LoginPage() {
         })
 
         setIsLoading(false)
-        onLogin()
+        router.push('/')
       }
     } catch (error) {
       console.error("[v0] Login error:", error)
@@ -2327,7 +2329,7 @@ export function LoginPage() {
                       })
 
                       setIsLoading(false)
-                      onLogin()
+                      router.push('/')
                       setModalView("none")
                       setOtpCode("")
                     } catch (error) {
