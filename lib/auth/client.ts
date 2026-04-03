@@ -1,7 +1,9 @@
 'use client'
 
-import { createAuthClient } from '@neondatabase/neon-js/auth'
+import { createAuthClient } from 'better-auth/react'
+
+const baseUrl = process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000'
 
 export const authClient = createAuthClient({
-  baseUrl: process.env.NEXT_PUBLIC_NEON_AUTH_URL!,
+  baseUrl: baseUrl,
 })

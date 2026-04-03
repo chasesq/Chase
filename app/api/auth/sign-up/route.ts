@@ -1,15 +1,15 @@
+import { auth } from '@/lib/auth/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, email, password, phone_number } = body
+    const { email, password, name, phone_number } = await request.json()
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, email, password' },
-        { status: 400 },
+        { message: 'Email and password are required' },
+        { status: 400 }
       )
     }
 
@@ -17,110 +17,44 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 },
+        { message: 'Invalid email format' },
+        { status: 400 }
       )
     }
 
     // Password validation (minimum 8 characters)
     if (password.length < 8) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
-        { status: 400 },
+        { message: 'Password must be at least 8 characters long' },
+        { status: 400 }
       )
     }
 
-    // Get Auth0 credentials from environment
-    const auth0Domain = process.env.AUTH0_DOMAIN
-    const auth0ClientId = process.env.AUTH0_CLIENT_ID
-    const auth0ClientSecret = process.env.AUTH0_CLIENT_SECRET
-
-    if (!auth0Domain || !auth0ClientId || !auth0ClientSecret) {
-      console.error('[Auth0 Sign-up] Missing Auth0 environment variables')
-      return NextResponse.json(
-        { error: 'Auth0 configuration is incomplete' },
-        { status: 500 },
-      )
-    }
-
-    // Step 1: Get Auth0 Management API access token
-    const tokenResponse = await fetch(`https://${auth0Domain}/oauth/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: auth0ClientId,
-        client_secret: auth0ClientSecret,
-        audience: `https://${auth0Domain}/api/v2/`,
-        grant_type: 'client_credentials',
-      }),
+    // Call the better-auth sign-up endpoint
+    const response = await auth.api.signUpEmail({
+      email,
+      password,
+      name,
+      headers: request.headers,
     })
 
-    if (!tokenResponse.ok) {
-      console.error('[Auth0 Sign-up] Failed to get management token:', await tokenResponse.text())
-      return NextResponse.json(
-        { error: 'Failed to authenticate with Auth0' },
-        { status: 500 },
-      )
-    }
+    console.log('[v0] User created successfully')
 
-    const { access_token } = await tokenResponse.json()
-
-    // Step 2: Create user in Auth0
-    const createUserResponse = await fetch(`https://${auth0Domain}/api/v2/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-      },
-      body: JSON.stringify({
-        email,
-        password,
-        connection: 'Username-Password-Authentication', // Default database connection
-        user_metadata: {
-          name,
-          phone_number: phone_number || undefined,
-        },
-        email_verified: false,
-      }),
-    })
-
-    if (!createUserResponse.ok) {
-      const error = await createUserResponse.json()
-      console.error('[Auth0 Sign-up] Failed to create user:', error)
-      
-      // Handle specific Auth0 errors
-      if (error.statusCode === 409) {
-        return NextResponse.json(
-          { error: 'Email already exists' },
-          { status: 409 },
-        )
-      }
-
-      return NextResponse.json(
-        { error: error.message || 'Failed to create user' },
-        { status: createUserResponse.status },
-      )
-    }
-
-    const newUser = await createUserResponse.json()
-
-    console.log('[Auth0 Sign-up] User created successfully:', newUser.user_id)
-
-    return NextResponse.json(
-      {
-        message: 'User created successfully',
-        user_id: newUser.user_id,
-        email: newUser.email,
-      },
-      { status: 201 },
-    )
+    return response
   } catch (error) {
-    console.error('[Auth0 Sign-up] Error:', error)
+    console.error('[v0] Sign-up error:', error)
+    
+    // Check if email already exists
+    if (error instanceof Error && error.message.includes('already exists')) {
+      return NextResponse.json(
+        { message: 'Email already registered' },
+        { status: 409 }
+      )
+    }
+
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'An error occurred during sign-up',
-      },
-      { status: 500 },
+      { message: 'Failed to sign up' },
+      { status: 500 }
     )
   }
 }

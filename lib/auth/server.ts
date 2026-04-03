@@ -1,8 +1,17 @@
-import { createNeonAuth } from '@neondatabase/auth/next/server'
+import { betterAuth } from 'better-auth'
+import { neonAdapter } from 'better-auth/adapters/neon'
+import { neon } from '@neondatabase/serverless'
 
-export const auth = createNeonAuth({
-  baseUrl: process.env.NEON_AUTH_BASE_URL!,
-  cookies: {
-    secret: process.env.NEON_AUTH_COOKIE_SECRET!,
+const sql = neon(process.env.DATABASE_URL!)
+
+export const auth = betterAuth({
+  database: neonAdapter(sql),
+  emailAndPassword: {
+    enabled: true,
+    autoSignInAfterSignUp: true,
   },
+  appName: 'Chase Banking',
+  baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+  basePath: '/api/auth',
+  secret: process.env.BETTER_AUTH_SECRET || 'your-secret-key',
 })

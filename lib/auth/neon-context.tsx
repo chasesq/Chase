@@ -31,18 +31,22 @@ export function NeonAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const session = await authClient.getSession()
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.name,
-            image: session.user.image,
-            emailVerified: session.user.emailVerified,
-          })
+        // Use the better-auth client to get the current session
+        const response = await fetch('/api/auth/get-session')
+        if (response.ok) {
+          const data = await response.json()
+          if (data?.user) {
+            setUser({
+              id: data.user.id,
+              email: data.user.email,
+              name: data.user.name,
+              image: data.user.image,
+              emailVerified: data.user.emailVerified,
+            })
+          }
         }
       } catch (error) {
-        console.error('[NeonAuth] Failed to get session:', error)
+        console.error('[v0] Failed to get session:', error)
       } finally {
         setIsLoading(false)
       }
@@ -54,21 +58,30 @@ export function NeonAuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      const response = await authClient.signIn.email(
-        { email, password },
-        { onSuccess: () => window.location.href = '/' }
-      )
-      if (response?.user) {
+      const response = await fetch('/api/auth/sign-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Sign in failed')
+      }
+      
+      const data = await response.json()
+      if (data?.user) {
         setUser({
-          id: response.user.id,
-          email: response.user.email,
-          name: response.user.name,
-          image: response.user.image,
-          emailVerified: response.user.emailVerified,
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          image: data.user.image,
+          emailVerified: data.user.emailVerified,
         })
       }
+      window.location.href = '/'
     } catch (error) {
-      console.error('[NeonAuth] Sign in failed:', error)
+      console.error('[v0] Sign in failed:', error)
       throw error
     } finally {
       setIsLoading(false)
@@ -78,21 +91,30 @@ export function NeonAuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = useCallback(async (email: string, password: string, name?: string) => {
     setIsLoading(true)
     try {
-      const response = await authClient.signUp.email(
-        { email, password, name },
-        { onSuccess: () => window.location.href = '/' }
-      )
-      if (response?.user) {
+      const response = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Sign up failed')
+      }
+      
+      const data = await response.json()
+      if (data?.user) {
         setUser({
-          id: response.user.id,
-          email: response.user.email,
-          name: response.user.name,
-          image: response.user.image,
-          emailVerified: response.user.emailVerified,
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          image: data.user.image,
+          emailVerified: data.user.emailVerified,
         })
       }
+      window.location.href = '/'
     } catch (error) {
-      console.error('[NeonAuth] Sign up failed:', error)
+      console.error('[v0] Sign up failed:', error)
       throw error
     } finally {
       setIsLoading(false)
@@ -102,11 +124,13 @@ export function NeonAuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setIsLoading(true)
     try {
-      await authClient.signOut()
+      await fetch('/api/auth/sign-out', {
+        method: 'POST',
+      })
       setUser(null)
       window.location.href = '/auth/login'
     } catch (error) {
-      console.error('[NeonAuth] Sign out failed:', error)
+      console.error('[v0] Sign out failed:', error)
       throw error
     } finally {
       setIsLoading(false)
@@ -115,12 +139,18 @@ export function NeonAuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     try {
-      await authClient.forgetPassword({
-        email,
-        redirectUrl: `${window.location.origin}/auth/reset-password`,
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Password reset request failed')
+      }
     } catch (error) {
-      console.error('[NeonAuth] Password reset failed:', error)
+      console.error('[v0] Password reset failed:', error)
       throw error
     }
   }, [])
