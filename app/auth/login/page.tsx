@@ -1,13 +1,5 @@
-import { LoginForm } from '@/components/login-form'
-import { AuthLayout } from '@/components/auth-layout'
+import { LoginPage } from '@/components/login-page'
 
 export default function Page() {
-  return (
-    <AuthLayout
-      title="Welcome Back"
-      subtitle="Access your Chase banking account securely"
-    >
-      <LoginForm />
-    </AuthLayout>
-  )
+  return <LoginPage onLogin={() => {}} />
 }
