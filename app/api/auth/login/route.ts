@@ -66,42 +66,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const supabase = createServiceClient()
-
-    // Query user from database
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, email, username, full_name, phone, address, member_since, tier, account_number, balance')
-      .eq('email', email)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-
-    // Verify password (in production, use bcrypt comparison)
-    // For now, we'll do a simple check - in production this should be bcrypt.compare
-    const passwordHashMap: { [key: string]: string } = {
-      'linhuang011@gmail.com': '$2b$10$8q6VQU.8n7K1R0P8V9L2wubBnfJ5l5Y3V3H5C0U0R1E9X0M0Z9R6K', // Lin2000
-      'johnnymercer1122@gmail.com': '$2b$10$9r7WRV.9o8L2S1Q9W0M3xvcCogK6m6Z4W4I6D1V1S2F0Y1N1A0S7L', // Johnny11
-    }
-
-    // Note: In production, use bcrypt.compare(password, user.password_hash)
-    // This is a simplified check for demo purposes
-    const isValidPassword = password === 'Lin2000' && email === 'linhuang011@gmail.com' ||
-                           password === 'Johnny11' && email === 'johnnymercer1122@gmail.com'
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-
-    // Create session and return user profile for Lin Huang
+    // Check for Lin Huang user
     if (email === 'linhuang011@gmail.com' && password === 'Lin2000') {
       const linHuangProfile = {
         id: 'user-lin-huang-001',
@@ -140,6 +105,30 @@ export async function POST(request: NextRequest) {
         user: linHuangProfile,
       })
     }
+
+    // Check for other demo user
+    if (email === 'johnnymercer1122@gmail.com' && password === 'Johnny11') {
+      const johnnyProfile = {
+        id: 'user-johnny-mercer-001',
+        email: 'johnnymercer1122@gmail.com',
+        username: 'JOHNNY_MERCER',
+        full_name: 'Johnny Mercer',
+        phone: '+1-415-555-0123',
+        address: '789 Market Street, San Francisco, CA 94102',
+        member_since: '2024-01-15',
+        tier: 'premium',
+        account_number: 'CHK-****5678',
+        balance: 0,
+        is_admin: false,
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: johnnyProfile,
+      })
+    }
+
+    const supabase = createServiceClient()
 
     // Query user from database for other users
     const { data: user, error: userError } = await supabase
