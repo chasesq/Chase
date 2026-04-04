@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-interface StripeDashboardDrawerProps {
+interface DashboardDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -77,7 +77,7 @@ interface Refund {
   paymentIntentId?: string | null
 }
 
-export function StripeDashboardDrawer({ open, onOpenChange }: StripeDashboardDrawerProps) {
+export function DashboardDrawer({ open, onOpenChange }: DashboardDrawerProps) {
   const [balance, setBalance] = useState<Balance | null>(null)
   const [payments, setPayments] = useState<Payment[]>([])
   const [transactions, setTransactions] = useState<BalanceTransaction[]>([])
@@ -216,7 +216,7 @@ export function StripeDashboardDrawer({ open, onOpenChange }: StripeDashboardDra
                   <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8">
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
-                  <DrawerTitle className="text-lg font-semibold">Stripe Dashboard</DrawerTitle>
+                  <DrawerTitle className="text-lg font-semibold">Dashboard</DrawerTitle>
                 </div>
                 <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
@@ -227,6 +227,27 @@ export function StripeDashboardDrawer({ open, onOpenChange }: StripeDashboardDra
 
             <ScrollArea className="flex-1 px-4">
               <div className="py-4 space-y-4">
+                {/* Full page loading state - wait for all data before showing */}
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                    <div className="space-y-3 w-full max-w-sm">
+                      {/* Balance cards skeleton */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-muted rounded-lg h-24 animate-pulse" />
+                        <div className="bg-muted rounded-lg h-24 animate-pulse" />
+                      </div>
+                      {/* Tabs skeleton */}
+                      <div className="bg-muted rounded-lg h-10 animate-pulse" />
+                      {/* Content skeleton */}
+                      <div className="space-y-2">
+                        <div className="bg-muted rounded-lg h-20 animate-pulse" />
+                        <div className="bg-muted rounded-lg h-20 animate-pulse" />
+                        <div className="bg-muted rounded-lg h-20 animate-pulse" />
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+                  </div>
+                ) : (
                 {/* Balance Cards */}
                 <div className="grid grid-cols-2 gap-3">
                   <Card>
@@ -411,6 +432,7 @@ export function StripeDashboardDrawer({ open, onOpenChange }: StripeDashboardDra
                   </TabsContent>
                 </Tabs>
               </div>
+                )}
             </ScrollArea>
           </div>
         </DrawerContent>

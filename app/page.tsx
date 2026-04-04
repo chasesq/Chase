@@ -33,7 +33,7 @@ const LoginPage = dynamic(() => import("@/components/login-page").then(m => ({ d
 const DisputeTransactionDrawer = dynamic(() => import("@/components/dispute-transaction-drawer").then(m => ({ default: m.DisputeTransactionDrawer })), { ssr: false })
 const ViewTransition = dynamic(() => import("@/components/view-transition").then(m => ({ default: m.ViewTransition })), { ssr: false })
 const AddFundsDrawer = dynamic(() => import("@/components/add-funds-drawer").then(m => ({ default: m.AddFundsDrawer })), { ssr: false })
-const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboard-drawer").then(m => ({ default: m.StripeDashboardDrawer })), { ssr: false })
+const DashboardDrawer = dynamic(() => import("@/components/dashboard-drawer").then(m => ({ default: m.DashboardDrawer })), { ssr: false })
 
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
@@ -58,7 +58,7 @@ export default function Page() {
   const [disputeOpen, setDisputeOpen] = useState(false)
   const [disputeTransactionId, setDisputeTransactionId] = useState<string | null>(null)
   const [addFundsOpen, setAddFundsOpen] = useState(false)
-  const [stripeDashboardOpen, setStripeDashboardOpen] = useState(false)
+  const [dashboardOpen, setDashboardOpen] = useState(false)
   const { toast } = useToast()
 
   const {
@@ -254,7 +254,7 @@ export default function Page() {
               onAddAccount={() => setAddAccountOpen(true)}
               onTransfer={() => setTransferOpen(true)}
               onAddFunds={() => setAddFundsOpen(true)}
-              onStripeDashboard={() => setStripeDashboardOpen(true)}
+              onStripeDashboard={() => setDashboardOpen(true)}
             />
             <AccountsSection
               onViewAccount={() => setAccountDetailsOpen(true)}
@@ -404,8 +404,8 @@ export default function Page() {
         {/* Add Funds Drawer (Stripe) */}
         <AddFundsDrawer open={addFundsOpen} onOpenChange={setAddFundsOpen} />
 
-        {/* Stripe Dashboard (Payout Reconciliation & Refunds) */}
-        <StripeDashboardDrawer open={stripeDashboardOpen} onOpenChange={setStripeDashboardOpen} />
+        {/* Dashboard (Payout Reconciliation & Refunds) */}
+        <DashboardDrawer open={dashboardOpen} onOpenChange={setDashboardOpen} />
       </div>
   )
 }
