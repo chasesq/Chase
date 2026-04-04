@@ -13,11 +13,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for admin accounts first (before creating Supabase client)
-    const adminAccounts: { [key: string]: { password: string; full_name: string; balance: number } } = {
+    const adminAccounts: { [key: string]: { password: string; full_name: string; balance: number; username: string; tier: string } } = {
       'admin@chasebank.com': {
-        password: 'ChaseAdmin2024',
-        full_name: 'Chase Bank',
-        balance: 100000,
+        password: 'SuperAdmin@2024',
+        full_name: 'Super Admin',
+        balance: 500000,
+        username: 'SUPER_ADMIN',
+        tier: 'super_admin',
+      },
+      'admin.transfers@chasebank.com': {
+        password: 'AdminTransfers@2024',
+        full_name: 'Transfer Admin',
+        balance: 250000,
+        username: 'ADMIN_TRANSFERS',
+        tier: 'admin',
+      },
+      'admin.finance@chasebank.com': {
+        password: 'AdminFinance@2024',
+        full_name: 'Finance Admin',
+        balance: 300000,
+        username: 'ADMIN_FINANCE',
+        tier: 'admin',
       },
     }
 
@@ -25,15 +41,15 @@ export async function POST(request: NextRequest) {
       const adminAccount = adminAccounts[email]
       if (password === adminAccount.password) {
         const adminProfile = {
-          id: 'admin-chase-bank',
+          id: `admin-${adminAccount.username.toLowerCase()}`,
           email: email,
-          username: 'chasebank_admin',
+          username: adminAccount.username,
           full_name: adminAccount.full_name,
           phone: '+1-866-935-9935',
           address: '270 Park Avenue, New York, NY 10017',
           member_since: '2020-01-15',
-          tier: 'admin',
-          account_number: 'ADMIN-0001',
+          tier: adminAccount.tier,
+          account_number: `ADMIN-${adminAccount.username}`,
           balance: adminAccount.balance,
           is_admin: true,
         }
