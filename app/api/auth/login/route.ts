@@ -101,6 +101,60 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Create session and return user profile for Lin Huang
+    if (email === 'linhuang011@gmail.com' && password === 'Lin2000') {
+      const linHuangProfile = {
+        id: 'user-lin-huang-001',
+        email: 'linhuang011@gmail.com',
+        username: 'LIN_HUANG',
+        full_name: 'Lin Huang',
+        phone: '+1-415-555-0147',
+        address: '456 Technology Lane, San Francisco, CA 94105',
+        member_since: '2024-04-04',
+        tier: 'premium',
+        account_number: 'CHK-****7890',
+        balance: 0,
+        is_admin: false,
+        accounts: [
+          {
+            id: 'acc-lin-checking-001',
+            name: 'Checking Account',
+            type: 'checking',
+            number: 'CHK-****7890',
+            balance: 0,
+            currency: 'USD',
+          },
+          {
+            id: 'acc-lin-savings-001',
+            name: 'Savings Account',
+            type: 'savings',
+            number: 'SAV-****7891',
+            balance: 0,
+            currency: 'USD',
+          },
+        ],
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: linHuangProfile,
+      })
+    }
+
+    // Query user from database for other users
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email, username, full_name, phone, address, member_since, tier, account_number, balance')
+      .eq('email', email)
+      .single()
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      )
+    }
+
     // Create session and return user profile
     const userProfile = {
       id: user.id,
