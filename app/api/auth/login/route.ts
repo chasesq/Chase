@@ -131,13 +131,13 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient()
 
     // Query user from database for other users
-    const { data: user, error: userError } = await supabase
+    const { data: dbUser, error: dbError } = await supabase
       .from('users')
       .select('id, email, username, full_name, phone, address, member_since, tier, account_number, balance')
       .eq('email', email)
       .single()
 
-    if (userError || !user) {
+    if (dbError || !dbUser) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -146,16 +146,16 @@ export async function POST(request: NextRequest) {
 
     // Create session and return user profile
     const userProfile = {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      full_name: user.full_name,
-      phone: user.phone,
-      address: user.address,
-      member_since: user.member_since,
-      tier: user.tier,
-      account_number: user.account_number,
-      balance: user.balance || 0,
+      id: dbUser.id,
+      email: dbUser.email,
+      username: dbUser.username,
+      full_name: dbUser.full_name,
+      phone: dbUser.phone,
+      address: dbUser.address,
+      member_since: dbUser.member_since,
+      tier: dbUser.tier,
+      account_number: dbUser.account_number,
+      balance: dbUser.balance || 0,
     }
 
     return NextResponse.json({

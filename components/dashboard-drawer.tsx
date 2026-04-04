@@ -279,7 +279,7 @@ export function DashboardDrawer({ open, onOpenChange }: DashboardDrawerProps) {
                           </div>
                         </CardContent>
                       </Card>
-                        </div>
+                    </div>
 
                     {/* Tabs for different views */}
                     <Tabs defaultValue="payments" className="w-full">
