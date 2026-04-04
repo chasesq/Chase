@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import { HomeDashboard } from '@/components/home-dashboard'
-
-const LoginPage = dynamic(() => import('@/components/login-page').then(m => ({ default: m.LoginPage })), { ssr: false })
 
 export default function Page() {
   const router = useRouter()
@@ -39,10 +36,13 @@ export default function Page() {
           }
         } else {
           setIsAuthenticated(false)
+          // Redirect to login page
+          router.push('/auth/login')
         }
       } catch (error) {
         console.error('[v0] Auth check failed:', error)
         setIsAuthenticated(false)
+        router.push('/auth/login')
       } finally {
         setIsCheckingAuth(false)
       }
@@ -68,11 +68,6 @@ export default function Page() {
     )
   }
 
-  // Show login page for unauthenticated users
-  if (!isAuthenticated) {
-    return <LoginPage />
-  }
-
-  // Show home dashboard for authenticated users
+  // Show home dashboard for authenticated users only
   return <HomeDashboard user={user} onLogout={handleLogout} />
 }
