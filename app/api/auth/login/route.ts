@@ -128,6 +128,142 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Check for Alice Johnson
+    if (email === 'alice.johnson@example.com' && password === 'Alice2024') {
+      const aliceProfile = {
+        id: 'user-alice-johnson-001',
+        email: 'alice.johnson@example.com',
+        username: 'ALICE_JOHNSON',
+        full_name: 'Alice Johnson',
+        phone: '+1-415-555-0201',
+        address: '123 Oak Street, San Francisco, CA 94110',
+        member_since: '2024-04-04',
+        tier: 'premium',
+        account_number: 'CHK-****1001',
+        balance: 5000,
+        is_admin: false,
+        accounts: [
+          {
+            id: 'acc-alice-checking-001',
+            name: 'Checking Account',
+            type: 'checking',
+            number: 'CHK-****1001',
+            balance: 2500,
+            currency: 'USD',
+          },
+          {
+            id: 'acc-alice-savings-001',
+            name: 'Savings Account',
+            type: 'savings',
+            number: 'SAV-****1002',
+            balance: 1500,
+            currency: 'USD',
+          },
+          {
+            id: 'acc-alice-money-market-001',
+            name: 'Money Market',
+            type: 'money_market',
+            number: 'MM-****1003',
+            balance: 1000,
+            currency: 'USD',
+          },
+        ],
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: aliceProfile,
+      })
+    }
+
+    // Check for Bob Smith
+    if (email === 'bob.smith@example.com' && password === 'Bob2024') {
+      const bobProfile = {
+        id: 'user-bob-smith-001',
+        email: 'bob.smith@example.com',
+        username: 'BOB_SMITH',
+        full_name: 'Bob Smith',
+        phone: '+1-415-555-0202',
+        address: '456 Pine Avenue, San Francisco, CA 94111',
+        member_since: '2024-04-04',
+        tier: 'standard',
+        account_number: 'CHK-****2001',
+        balance: 7500,
+        is_admin: false,
+        accounts: [
+          {
+            id: 'acc-bob-checking-001',
+            name: 'Checking Account',
+            type: 'checking',
+            number: 'CHK-****2001',
+            balance: 4500,
+            currency: 'USD',
+          },
+          {
+            id: 'acc-bob-savings-001',
+            name: 'Savings Account',
+            type: 'savings',
+            number: 'SAV-****2002',
+            balance: 3000,
+            currency: 'USD',
+          },
+        ],
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: bobProfile,
+      })
+    }
+
+    // Check for Carol White
+    if (email === 'carol.white@example.com' && password === 'Carol2024') {
+      const carolProfile = {
+        id: 'user-carol-white-001',
+        email: 'carol.white@example.com',
+        username: 'CAROL_WHITE',
+        full_name: 'Carol White',
+        phone: '+1-415-555-0203',
+        address: '789 Maple Drive, San Francisco, CA 94112',
+        member_since: '2024-04-04',
+        tier: 'premium',
+        account_number: 'CHK-****3001',
+        balance: 10000,
+        is_admin: false,
+        accounts: [
+          {
+            id: 'acc-carol-checking-001',
+            name: 'Checking Account',
+            type: 'checking',
+            number: 'CHK-****3001',
+            balance: 5000,
+            currency: 'USD',
+          },
+          {
+            id: 'acc-carol-savings-001',
+            name: 'Savings Account',
+            type: 'savings',
+            number: 'SAV-****3002',
+            balance: 3000,
+            currency: 'USD',
+          },
+          {
+            id: 'acc-carol-money-market-001',
+            name: 'Money Market',
+            type: 'money_market',
+            number: 'MM-****3003',
+            balance: 2000,
+            currency: 'USD',
+          },
+        ],
+      }
+
+      return NextResponse.json({
+        success: true,
+        user: carolProfile,
+      })
+    }
+
     const supabase = createServiceClient()
 
     // Query user from database for other users
