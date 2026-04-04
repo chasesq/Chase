@@ -45,8 +45,12 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       localStorage.setItem('user_profile', JSON.stringify(data.user))
       localStorage.setItem('userEmail', email)
 
-      // Redirect to dashboard on success
-      router.push('/')
+      // Redirect based on user role
+      if (data.user.is_admin || data.user.tier === 'super_admin' || data.user.tier === 'admin') {
+        router.push('/admin')
+      } else {
+        router.push('/')
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred during sign in. Please try again.')
     } finally {
