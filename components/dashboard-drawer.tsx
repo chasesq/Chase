@@ -248,191 +248,193 @@ export function DashboardDrawer({ open, onOpenChange }: DashboardDrawerProps) {
                     <p className="text-sm text-muted-foreground">Loading dashboard...</p>
                   </div>
                 ) : (
-                {/* Balance Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                  <Card>
-                    <CardHeader className="pb-2 pt-4 px-4">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Available</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="text-2xl font-bold text-green-600">
-                        {loading ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          formatCurrency(balance?.available[0]?.amount || 0, 'usd')
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2 pt-4 px-4">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pb-4">
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {loading ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          formatCurrency(balance?.pending[0]?.amount || 0, 'usd')
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Tabs for different views */}
-                <Tabs defaultValue="payments" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="payments">Payments</TabsTrigger>
-                    <TabsTrigger value="transactions">Transactions</TabsTrigger>
-                    <TabsTrigger value="refunds">Refunds</TabsTrigger>
-                  </TabsList>
-
-                  {/* Payments Tab */}
-                  <TabsContent value="payments" className="mt-4 space-y-3">
-                    {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : payments.length === 0 ? (
+                  <>
+                    {/* Balance Cards */}
+                    <div className="grid grid-cols-2 gap-3">
                       <Card>
-                        <CardContent className="py-8 text-center text-muted-foreground">
-                          No payments found
+                        <CardHeader className="pb-2 pt-4 px-4">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">Available</CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-4 pb-4">
+                          <div className="text-2xl font-bold text-green-600">
+                            {loading ? (
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                            ) : (
+                              formatCurrency(balance?.available[0]?.amount || 0, 'usd')
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
-                    ) : (
-                      payments.map((payment) => (
-                        <Card key={payment.id} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold">
-                                    {formatCurrency(payment.amount, payment.currency)}
-                                  </span>
-                                  {getStatusBadge(payment.status)}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {payment.metadata?.productId || payment.description || 'Payment'}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {formatDate(payment.created)}
-                                </p>
-                              </div>
-                              {payment.status === 'succeeded' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleRefundClick(payment)}
-                                  disabled={refundingId === payment.id}
-                                  className="flex-shrink-0"
-                                >
-                                  {refundingId === payment.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Undo2 className="h-4 w-4 mr-1" />
-                                      Refund
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </TabsContent>
-
-                  {/* Transactions Tab (Payout Reconciliation) */}
-                  <TabsContent value="transactions" className="mt-4 space-y-3">
-                    {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : transactions.length === 0 ? (
                       <Card>
-                        <CardContent className="py-8 text-center text-muted-foreground">
-                          No transactions found
+                        <CardHeader className="pb-2 pt-4 px-4">
+                          <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-4 pb-4">
+                          <div className="text-2xl font-bold text-yellow-600">
+                            {loading ? (
+                              <Loader2 className="h-6 w-6 animate-spin" />
+                            ) : (
+                              formatCurrency(balance?.pending[0]?.amount || 0, 'usd')
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
-                    ) : (
-                      transactions.map((txn) => (
-                        <Card key={txn.id} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="mt-1">
-                                {getTransactionIcon(txn.type)}
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center justify-between">
-                                  <span className="font-medium capitalize">{txn.type}</span>
-                                  <span className={`font-semibold ${txn.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {txn.amount >= 0 ? '+' : ''}{formatCurrency(txn.amount, txn.currency)}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {txn.description || `${txn.type} transaction`}
-                                </p>
-                                <div className="flex items-center justify-between mt-1">
-                                  <p className="text-xs text-muted-foreground">
-                                    {formatDate(txn.created)}
-                                  </p>
-                                  {txn.fee > 0 && (
-                                    <span className="text-xs text-muted-foreground">
-                                      Fee: {formatCurrency(txn.fee, txn.currency)}
-                                    </span>
+                        </div>
+
+                    {/* Tabs for different views */}
+                    <Tabs defaultValue="payments" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="payments">Payments</TabsTrigger>
+                        <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                        <TabsTrigger value="refunds">Refunds</TabsTrigger>
+                      </TabsList>
+
+                      {/* Payments Tab */}
+                      <TabsContent value="payments" className="mt-4 space-y-3">
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : payments.length === 0 ? (
+                          <Card>
+                            <CardContent className="py-8 text-center text-muted-foreground">
+                              No payments found
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          payments.map((payment) => (
+                            <Card key={payment.id} className="overflow-hidden">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-semibold">
+                                        {formatCurrency(payment.amount, payment.currency)}
+                                      </span>
+                                      {getStatusBadge(payment.status)}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {payment.metadata?.productId || payment.description || 'Payment'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {formatDate(payment.created)}
+                                    </p>
+                                  </div>
+                                  {payment.status === 'succeeded' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleRefundClick(payment)}
+                                      disabled={refundingId === payment.id}
+                                      className="flex-shrink-0"
+                                    >
+                                      {refundingId === payment.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <>
+                                          <Undo2 className="h-4 w-4 mr-1" />
+                                          Refund
+                                        </>
+                                      )}
+                                    </Button>
                                   )}
                                 </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </TabsContent>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </TabsContent>
 
-                  {/* Refunds Tab */}
-                  <TabsContent value="refunds" className="mt-4 space-y-3">
-                    {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : refunds.length === 0 ? (
-                      <Card>
-                        <CardContent className="py-8 text-center text-muted-foreground">
-                          No refunds found
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      refunds.map((refund) => (
-                        <Card key={refund.id} className="overflow-hidden">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <ArrowUpRight className="h-4 w-4 text-red-600" />
-                                  <span className="font-semibold text-red-600">
-                                    -{formatCurrency(refund.amount, refund.currency)}
-                                  </span>
-                                  {getStatusBadge(refund.status)}
+                      {/* Transactions Tab (Payout Reconciliation) */}
+                      <TabsContent value="transactions" className="mt-4 space-y-3">
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : transactions.length === 0 ? (
+                          <Card>
+                            <CardContent className="py-8 text-center text-muted-foreground">
+                              No transactions found
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          transactions.map((txn) => (
+                            <Card key={txn.id} className="overflow-hidden">
+                              <CardContent className="p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="mt-1">
+                                    {getTransactionIcon(txn.type)}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-medium capitalize">{txn.type}</span>
+                                      <span className={`font-semibold ${txn.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {txn.amount >= 0 ? '+' : ''}{formatCurrency(txn.amount, txn.currency)}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {txn.description || `${txn.type} transaction`}
+                                    </p>
+                                    <div className="flex items-center justify-between mt-1">
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatDate(txn.created)}
+                                      </p>
+                                      {txn.fee > 0 && (
+                                        <span className="text-xs text-muted-foreground">
+                                          Fee: {formatCurrency(txn.fee, txn.currency)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                                <p className="text-sm text-muted-foreground capitalize">
-                                  {refund.reason?.replace(/_/g, ' ') || 'Customer requested'}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {formatDate(refund.created)}
-                                </p>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </TabsContent>
+
+                      {/* Refunds Tab */}
+                      <TabsContent value="refunds" className="mt-4 space-y-3">
+                        {loading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          </div>
+                        ) : refunds.length === 0 ? (
+                          <Card>
+                            <CardContent className="py-8 text-center text-muted-foreground">
+                              No refunds found
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          refunds.map((refund) => (
+                            <Card key={refund.id} className="overflow-hidden">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <ArrowUpRight className="h-4 w-4 text-red-600" />
+                                      <span className="font-semibold text-red-600">
+                                        -{formatCurrency(refund.amount, refund.currency)}
+                                      </span>
+                                      {getStatusBadge(refund.status)}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground capitalize">
+                                      {refund.reason?.replace(/_/g, ' ') || 'Customer requested'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {formatDate(refund.created)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </TabsContent>
+                    </Tabs>
+                  </>
                 )}
+              </div>
             </ScrollArea>
           </div>
         </DrawerContent>
