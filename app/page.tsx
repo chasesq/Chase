@@ -21,12 +21,28 @@ export default function Page() {
           .find(row => row.startsWith('session='))
         
         if (sessionCookie) {
-          const email = sessionCookie.split('=')[1]
-          setIsAuthenticated(true)
-          setUser({ email, name: email.split('@')[0] })
+          try {
+            // Decode the base64 encoded session data
+            const sessionData = JSON.parse(atob(sessionCookie.split('=')[1]))
+            setIsAuthenticated(true)
+            setUser({ 
+              email: sessionData.email, 
+              name: sessionData.email.split('@')[0],
+              accountName: sessionData.accountName,
+              role: sessionData.role
+            })
+          } catch (decodeError) {
+            // Fallback to simple extraction if decoding fails
+            const email = sessionCookie.split('=')[1]
+            setIsAuthenticated(true)
+            setUser({ email, name: email.split('@')[0] })
+          }
+        } else {
+          setIsAuthenticated(false)
         }
       } catch (error) {
         console.error('[v0] Auth check failed:', error)
+        setIsAuthenticated(false)
       } finally {
         setIsCheckingAuth(false)
       }
