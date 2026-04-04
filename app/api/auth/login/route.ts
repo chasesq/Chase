@@ -144,7 +144,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create session and return user profile
+    // Fetch user accounts from user_accounts table
+    const { data: userAccounts, error: accountsError } = await supabase
+      .from('user_accounts')
+      .select('id, account_type, account_name, account_number, balance, currency, is_active')
+      .eq('user_id', dbUser.id)
+      .order('created_at', { ascending: true })
+
+    // Create session and return user profile with accounts
     const userProfile = {
       id: dbUser.id,
       email: dbUser.email,
@@ -156,6 +163,8 @@ export async function POST(request: NextRequest) {
       tier: dbUser.tier,
       account_number: dbUser.account_number,
       balance: dbUser.balance || 0,
+      is_admin: false,
+      accounts: userAccounts || [],
     }
 
     return NextResponse.json({
