@@ -2,7 +2,8 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
-import { ChevronLeft, ChevronRight, Edit, Camera, User, Mail, Phone, Calendar, Shield, Award, Gift, CreditCard, Smartphone, Bell, HelpCircle, FileText, Settings, LogOut, Send, History, Plane, Euro, DollarSign, Target, Plus, Trash2, CheckCircle, XCircle, Eye, EyeOff, Lock, Unlock, Key, Copy, Download, MapPin, Search, MessageCircle, ArrowLeft, Loader2, RefreshCw, Monitor, Tablet, Globe, Clock, UserCog, ShieldCheck, PieChart, Ticket, Bot, ChevronDown, QrCode, CheckCheck, AlertCircle, AlertTriangle, Info, X, Paperclip, ArrowRightLeft, Receipt, Navigation, Home, Car, TrendingDown, Link2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight, Edit, Camera, User, Mail, Phone, Calendar, Shield, Award, Gift, CreditCard, Smartphone, Bell, HelpCircle, FileText, Settings, LogOut, Send, History, Plane, Euro, DollarSign, Target, Plus, Trash2, CheckCircle, XCircle, Eye, EyeOff, Lock, Unlock, Key, Copy, Download, MapPin, Search, MessageCircle, ArrowLeft, Loader2, RefreshCw, Monitor, Tablet, Globe, Clock, UserCog, ShieldCheck, PieChart, Ticket, Bot, ChevronDown, QrCode, CheckCheck, AlertCircle, AlertTriangle, Info, X, Paperclip, ArrowRightLeft, Receipt, Navigation, Home, Car, TrendingDown, Link2, LayoutDashboard } from "lucide-react"
 import { SavingsGoalsView } from "@/components/savings-goals-view"
 import { SpendingAnalysisView } from "@/components/spending-analysis-view"
 import { LinkedDevicesManager } from "@/components/linked-devices-manager"
@@ -216,6 +217,7 @@ const getActivityBgColor = (action: string) => {
 }
 
 export function MoreView({ onLogout }: MoreViewProps) {
+  const router = useRouter()
   const {
     userProfile,
     updateUserProfile,
@@ -839,6 +841,7 @@ export function MoreView({ onLogout }: MoreViewProps) {
   }
 
   const menuItems = [
+    { label: "User Dashboard", description: "View your account overview and balance", icon: LayoutDashboard, view: "userDashboard" as ViewType, isExternal: true },
     { label: "Profile", description: "View and edit your personal details", icon: User, view: "profile" as ViewType },
     {
       label: "Account Management",
@@ -956,13 +959,19 @@ export function MoreView({ onLogout }: MoreViewProps) {
           </div>
         </Card>
 
-        <div className="space-y-2">
-          {menuItems.map((item) => (
-            <Card
-              key={item.label}
-              className="p-4 cursor-pointer hover:bg-accent transition-all duration-150 chase-card-shadow option-press"
-              onClick={() => setCurrentView(item.view)}
-            >
+<div className="space-y-2">
+  {menuItems.map((item) => (
+  <Card
+  key={item.label}
+  className="p-4 cursor-pointer hover:bg-accent transition-all duration-150 chase-card-shadow option-press"
+  onClick={() => {
+    if ((item as any).isExternal) {
+      router.push("/user-dashboard")
+    } else {
+      setCurrentView(item.view)
+    }
+  }}
+  >
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-full bg-[#0a4fa6]/10 flex items-center justify-center">
                   <item.icon className="h-5 w-5 text-[#0a4fa6]" />
