@@ -8,14 +8,14 @@ export default function SignUpSuccessPage() {
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">Check your email</CardTitle>
+            <CardTitle className="text-2xl">Account Created!</CardTitle>
             <CardDescription>
-              We sent you a confirmation link. Please check your email to verify your account.
+              Your account has been created successfully. You can now log in with your email and password.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/auth/login">Back to Login</Link>
+              <Link href="/auth/login">Continue to Login</Link>
             </Button>
           </CardContent>
         </Card>

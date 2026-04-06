@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,19 +31,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    // Use service client to create user with auto-confirm (bypasses email verification)
+    const supabase = createServiceClient()
 
-    // Sign up with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
+    // Create user with admin API - this auto-confirms the email
+    const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
-          `${request.nextUrl.origin}/auth/callback`,
-        data: {
-          full_name: name,
-          phone: phone_number || null,
-        },
+      email_confirm: true, // Auto-confirm email
+      user_metadata: {
+        full_name: name,
+        phone: phone_number || null,
       },
     })
 
@@ -51,9 +49,9 @@ export async function POST(request: NextRequest) {
       console.error('[Supabase Sign-up] Error:', error.message)
       
       // Handle specific Supabase errors
-      if (error.message.includes('already registered')) {
+      if (error.message.includes('already been registered') || error.message.includes('already exists')) {
         return NextResponse.json(
-          { error: 'Email already exists' },
+          { error: 'An account with this email already exists' },
           { status: 409 },
         )
       }
@@ -71,11 +69,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[Supabase Sign-up] User created successfully:', data.user.id)
+    console.log('[Supabase Sign-up] User created and auto-confirmed:', data.user.id)
 
     return NextResponse.json(
       {
-        message: 'User created successfully. Please check your email to verify your account.',
+        message: 'Account created successfully! You can now log in.',
         user_id: data.user.id,
         email: data.user.email,
       },
