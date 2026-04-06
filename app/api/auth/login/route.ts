@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // Note: In production, use bcrypt.compare(password, user.password_hash)
     // This is a simplified check for demo purposes
     const isValidPassword = password === 'Lin2000' && email === 'linhuang011@gmail.com' ||
-                           password === 'Johnny11' && email === 'johnnymercer1122@gmail.com'
+                           password === 'Johnny2024' && email === 'johnnymercer1122@gmail.com'
 
     if (!isValidPassword) {
       return NextResponse.json(
