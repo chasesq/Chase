@@ -332,6 +332,29 @@ export default function UserDashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
+              {/* User ID Display */}
+              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg border border-blue-500/20">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 flex items-center justify-center">
+                  <Shield className="h-4 w-4 text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-white/40 uppercase tracking-wider">User ID</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono font-medium text-white text-sm truncate">{userProfile.id || "Not set"}</p>
+                    <button 
+                      onClick={() => copyAccountNumber(userProfile.id || "")}
+                      className="text-white/30 hover:text-white/60 transition-colors"
+                    >
+                      {copiedAccount === userProfile.id ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-400" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                 <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <User className="h-4 w-4 text-blue-400" />
@@ -493,38 +516,36 @@ export default function UserDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* User Login Details Card */}
+        {/* Authentication Info Card */}
         <Card className="border border-white/10 bg-white/5 backdrop-blur-xl">
           <CardHeader className="pb-3 border-b border-white/10">
             <CardTitle className="text-white text-base font-semibold flex items-center gap-2">
-              <User className="h-4 w-4 text-white/50" />
-              Demo Login Credentials
+              <Shield className="h-4 w-4 text-white/50" />
+              Authentication with Supabase
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
-            {/* Admin Login */}
-            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <p className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-3">Admin Login (Chase Bank)</p>
-              <div className="space-y-1.5 text-sm">
-                <p className="text-white/80"><span className="text-white/50 font-medium">Email:</span> admin@chasebank.com</p>
-                <p className="text-white/80"><span className="text-white/50 font-medium">Password:</span> ChaseAdmin2024</p>
+            {/* Supabase Auth Info */}
+            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <p className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-3">Secure Authentication</p>
+              <div className="space-y-2 text-sm">
+                <p className="text-white/80">This app uses Supabase for secure authentication with:</p>
+                <ul className="text-white/70 text-xs space-y-1 ml-4 list-disc">
+                  <li>Secure password hashing (bcrypt)</li>
+                  <li>Unique User IDs for each account</li>
+                  <li>Email verification support</li>
+                  <li>Password recovery options</li>
+                  <li>Row Level Security (RLS) for data protection</li>
+                </ul>
               </div>
             </div>
 
-            {/* User Logins */}
-            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <p className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-3">User Login Details</p>
-              <div className="space-y-3">
-                <div className="pb-3 border-b border-emerald-500/20">
-                  <p className="text-white font-medium text-sm mb-1">LIN HUANG</p>
-                  <p className="text-white/70 text-xs"><span className="text-white/40">Email:</span> linhuang011@gmail.com</p>
-                  <p className="text-white/70 text-xs"><span className="text-white/40">Password:</span> Lin2000</p>
-                </div>
-                <div>
-                  <p className="text-white font-medium text-sm mb-1">Johnny Mercer</p>
-                  <p className="text-white/70 text-xs"><span className="text-white/40">Email:</span> johnnymercer1122@gmail.com</p>
-                  <p className="text-white/70 text-xs"><span className="text-white/40">Password:</span> Johnny2024</p>
-                </div>
+            {/* Sign Up Instructions */}
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-3">Create Your Account</p>
+              <div className="space-y-1.5 text-sm">
+                <p className="text-white/80">Sign up at <a href="/auth/sign-up" className="text-blue-400 underline">/auth/sign-up</a> to create your account.</p>
+                <p className="text-white/60 text-xs mt-2">Your unique User ID will be automatically generated upon registration.</p>
               </div>
             </div>
           </CardContent>

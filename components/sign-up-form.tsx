@@ -63,12 +63,8 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         throw new Error(data.error || 'Sign up failed')
       }
 
-      // Redirect to MFA setup with user_id, or to success if user_id not provided
-      const redirectUrl = data.user_id 
-        ? `/auth/mfa-setup?user_id=${encodeURIComponent(data.user_id)}`
-        : '/auth/sign-up-success'
-      
-      router.push(redirectUrl)
+      // Redirect to success page - user needs to verify email before logging in
+      router.push('/auth/sign-up-success')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during sign up')
     } finally {
