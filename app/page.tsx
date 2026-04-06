@@ -349,18 +349,58 @@ export default function Page() {
         <DashboardHeader />
 
         <main className="px-4 pt-5 touch-pan-y">
-          <div className="mb-5">
-            <h1 className="text-2xl font-bold text-foreground">
-              {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "Chun Hung"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {userProfile?.account_number && `Account: ${userProfile.account_number} · `}
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
+          <div className="mb-5 space-y-3">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">
+                {getGreeting()}, {userProfile?.name?.split(" ")[0] || userProfile?.full_name?.split(" ")[0] || "Chun Hung"}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+            {/* User details card */}
+            <div className="bg-[#0a4fa6]/5 border border-[#0a4fa6]/10 rounded-xl px-4 py-3 space-y-2">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                {(userProfile?.email) && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Email</span>
+                    <span className="text-foreground font-medium truncate">{userProfile.email}</span>
+                  </div>
+                )}
+                {(userProfile?.phone) && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Phone</span>
+                    <span className="text-foreground font-medium">{userProfile.phone}</span>
+                  </div>
+                )}
+                {(userProfile?.account_number || userProfile?.name) && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Account</span>
+                    <span className="text-foreground font-medium">{userProfile?.account_number || "CHK-001234"}</span>
+                  </div>
+                )}
+                {(userProfile?.tier || userProfile?.memberSince) && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Member Since</span>
+                    <span className="text-foreground font-medium capitalize">
+                      {userProfile?.memberSince
+                        ? new Date(userProfile.memberSince).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                        : userProfile?.tier || "Gold"}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {(userProfile?.address) && (
+                <div className="flex flex-col pt-1 border-t border-[#0a4fa6]/10">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Address</span>
+                  <span className="text-foreground font-medium text-sm">{userProfile.address}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <ViewTransition viewKey={activeView} loadingDuration={300} showSpinner>
