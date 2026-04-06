@@ -22,8 +22,23 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error('[Supabase Login] Auth error:', authError.message)
+      
+      // Check if it's an email not confirmed error
+      if (authError.message.includes('Email not confirmed')) {
+        return NextResponse.json(
+          { 
+            error: 'Please verify your email before logging in. Check your inbox for the verification link.',
+            code: 'EMAIL_NOT_CONFIRMED'
+          },
+          { status: 401 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { 
+          error: 'Invalid email or password. If you just signed up, please check your email to verify your account first.',
+          code: 'INVALID_CREDENTIALS'
+        },
         { status: 401 }
       )
     }

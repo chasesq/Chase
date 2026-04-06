@@ -15,18 +15,53 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AlertCircle, Mail } from 'lucide-react'
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
   const router = useRouter()
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Please enter your email address first')
+      return
+    }
+    
+    setIsResending(true)
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      
+      if (response.ok) {
+        setResendSuccess(true)
+        setError(null)
+        setErrorCode(null)
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Failed to resend verification email')
+      }
+    } catch {
+      setError('Failed to resend verification email')
+    } finally {
+      setIsResending(false)
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setErrorCode(null)
+    setResendSuccess(false)
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -38,6 +73,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       const data = await response.json()
 
       if (!response.ok) {
+        setErrorCode(data.code || null)
         throw new Error(data.error || 'Login failed')
       }
 
@@ -93,7 +129,32 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {resendSuccess && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <Mail className="h-4 w-4 text-green-500" />
+                  <p className="text-sm text-green-600">Verification email sent! Please check your inbox.</p>
+                </div>
+              )}
+              {error && (
+                <div className="flex flex-col gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                  {(errorCode === 'EMAIL_NOT_CONFIRMED' || errorCode === 'INVALID_CREDENTIALS') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResendVerification}
+                      disabled={isResending}
+                      className="w-fit text-xs"
+                    >
+                      {isResending ? 'Sending...' : 'Resend verification email'}
+                    </Button>
+                  )}
+                </div>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
