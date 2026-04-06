@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
     // Use service client to create user with auto-confirm (bypasses email verification)
     const supabase = createServiceClient()
 
+    console.log('[v0] Attempting to create user with email:', email)
+
     // Create user with admin API - this auto-confirms the email
     const { data, error } = await supabase.auth.admin.createUser({
       email,
@@ -44,6 +46,8 @@ export async function POST(request: NextRequest) {
         phone: phone_number || null,
       },
     })
+
+    console.log('[v0] Create user result - error:', error?.message, 'user:', data?.user?.id)
 
     if (error) {
       console.error('[Supabase Sign-up] Error:', error.message)
