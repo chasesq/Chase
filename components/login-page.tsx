@@ -2609,6 +2609,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </div>
           </div>
 
+          {/* User Login Details */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 space-y-3">
+            <p className="text-xs font-bold text-green-900 uppercase tracking-wide">User Login Details</p>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="pb-2 border-b border-green-200">
+                <p><span className="font-semibold">Name:</span> LIN HUANG</p>
+                <p><span className="font-semibold">Email:</span> linhuang011@gmail.com</p>
+                <p><span className="font-semibold">Password:</span> Lin2000</p>
+              </div>
+              <div>
+                <p><span className="font-semibold">Name:</span> Johnny Mercer</p>
+                <p><span className="font-semibold">Email:</span> johnnymercer1122@gmail.com</p>
+                <p><span className="font-semibold">Password:</span> Johnny2024</p>
+              </div>
+            </div>
+          </div>
+
           {/* Sign In Button */}
           <Button
             onClick={handleSignIn}

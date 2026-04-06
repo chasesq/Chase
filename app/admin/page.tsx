@@ -12,6 +12,7 @@ import AdminUsersList from '@/components/admin/admin-users-list'
 import AdminTransferHistory from '@/components/admin/admin-transfer-history'
 import { FinancialAccountsDashboard } from '@/components/admin/financial-accounts-dashboard'
 import { PayoutScheduler } from '@/components/admin/payout-scheduler'
+import { CreateUserForm } from '@/components/admin/create-user-form'
 import { CardholdFormComponent } from '@/components/issuing/cardholder-form'
 import { CardIssuanceForm } from '@/components/issuing/card-issuance-form'
 import { CreditPolicyForm } from '@/components/credit/credit-policy-form'
@@ -42,7 +43,7 @@ export default function AdminDashboard() {
   const [pendingTransfers, setPendingTransfers] = useState<AdminTransfer[]>([])
   const [transferHistory, setTransferHistory] = useState<AdminTransfer[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts' | 'payouts' | 'issuing' | 'credit' | 'test-utilities'>('new-users')
+  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts' | 'payouts' | 'create-users' | 'issuing' | 'credit' | 'test-utilities'>('new-users')
   const supabase = createClient()
 
   // Fetch initial data
@@ -248,6 +249,16 @@ export default function AdminDashboard() {
               Payout Schedules
             </button>
             <button
+              onClick={() => setActiveTab('create-users')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+                activeTab === 'create-users'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Create Users
+            </button>
+            <button
               onClick={() => setActiveTab('issuing')}
               className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
                 activeTab === 'issuing'
@@ -319,6 +330,13 @@ export default function AdminDashboard() {
                   Payout Schedule Management
                 </h2>
                 <PayoutScheduler adminId="admin-chase-bank" />
+              </>
+            ) : activeTab === 'create-users' ? (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  User Account Management
+                </h2>
+                <CreateUserForm />
               </>
             ) : activeTab === 'issuing' ? (
               <div className="space-y-8">
