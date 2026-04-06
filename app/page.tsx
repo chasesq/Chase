@@ -73,9 +73,9 @@ export default function Page() {
   } = useBanking()
 
   const getUserFirstName = useCallback(() => {
-    if (!userProfile?.name) return "User"
-    const parts = userProfile.name.split(" ")
-    return parts[0] || "User"
+    if (!userProfile?.name) return "Chun Hung"
+
+    return parts[0] || "Chun Hung"
   }, [userProfile?.name])
 
   useEffect(() => {
@@ -351,7 +351,7 @@ export default function Page() {
         <main className="px-4 pt-5 touch-pan-y">
           <div className="mb-5">
             <h1 className="text-2xl font-bold text-foreground">
-              {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "User"}
+              {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "Chun Hung"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {userProfile?.account_number && `Account: ${userProfile.account_number} · `}
