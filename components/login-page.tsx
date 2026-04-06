@@ -2600,6 +2600,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
 
 
+          {/* Admin Login Details */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 space-y-3">
+            <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">Admin Login (Chase Bank)</p>
+            <div className="space-y-1 text-sm text-gray-700">
+              <p><span className="font-semibold">Email:</span> admin@chasebank.com</p>
+              <p><span className="font-semibold">Password:</span> ChaseAdmin2024</p>
+            </div>
+          </div>
+
           {/* Sign In Button */}
           <Button
             onClick={handleSignIn}
