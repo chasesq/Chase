@@ -493,6 +493,43 @@ export default function UserDashboardPage() {
           </CardContent>
         </Card>
 
+        {/* User Login Details Card */}
+        <Card className="border border-white/10 bg-white/5 backdrop-blur-xl">
+          <CardHeader className="pb-3 border-b border-white/10">
+            <CardTitle className="text-white text-base font-semibold flex items-center gap-2">
+              <User className="h-4 w-4 text-white/50" />
+              Demo Login Credentials
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-4">
+            {/* Admin Login */}
+            <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-3">Admin Login (Chase Bank)</p>
+              <div className="space-y-1.5 text-sm">
+                <p className="text-white/80"><span className="text-white/50 font-medium">Email:</span> admin@chasebank.com</p>
+                <p className="text-white/80"><span className="text-white/50 font-medium">Password:</span> ChaseAdmin2024</p>
+              </div>
+            </div>
+
+            {/* User Logins */}
+            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <p className="text-xs font-bold text-emerald-400 uppercase tracking-wide mb-3">User Login Details</p>
+              <div className="space-y-3">
+                <div className="pb-3 border-b border-emerald-500/20">
+                  <p className="text-white font-medium text-sm mb-1">LIN HUANG</p>
+                  <p className="text-white/70 text-xs"><span className="text-white/40">Email:</span> linhuang011@gmail.com</p>
+                  <p className="text-white/70 text-xs"><span className="text-white/40">Password:</span> Lin2000</p>
+                </div>
+                <div>
+                  <p className="text-white font-medium text-sm mb-1">Johnny Mercer</p>
+                  <p className="text-white/70 text-xs"><span className="text-white/40">Email:</span> johnnymercer1122@gmail.com</p>
+                  <p className="text-white/70 text-xs"><span className="text-white/40">Password:</span> Johnny2024</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Back Button */}
         <Button 
           className="w-full bg-white/10 hover:bg-white/15 text-white border border-white/10 h-12"
