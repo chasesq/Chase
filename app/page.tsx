@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
+import { useAuth } from "@/lib/auth-context"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -32,12 +33,13 @@ const TransactionsDrawer = dynamic(() => import("@/components/transactions-drawe
 const LoginPage = dynamic(() => import("@/components/login-page").then(m => ({ default: m.LoginPage })), { ssr: false })
 const DisputeTransactionDrawer = dynamic(() => import("@/components/dispute-transaction-drawer").then(m => ({ default: m.DisputeTransactionDrawer })), { ssr: false })
 const ViewTransition = dynamic(() => import("@/components/view-transition").then(m => ({ default: m.ViewTransition })), { ssr: false })
+const AddFundsDrawer = dynamic(() => import("@/components/add-funds-drawer").then(m => ({ default: m.AddFundsDrawer })), { ssr: false })
+const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboard-drawer").then(m => ({ default: m.StripeDashboardDrawer })), { ssr: false })
 
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
 export default function Page() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const { isAuthenticated, isLoading: isAuthLoading, user, profile, signOut } = useAuth()
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
 
@@ -55,6 +57,8 @@ export default function Page() {
   const [transactionsOpen, setTransactionsOpen] = useState(false)
   const [disputeOpen, setDisputeOpen] = useState(false)
   const [disputeTransactionId, setDisputeTransactionId] = useState<string | null>(null)
+  const [addFundsOpen, setAddFundsOpen] = useState(false)
+  const [stripeDashboardOpen, setStripeDashboardOpen] = useState(false)
   const { toast } = useToast()
 
   const {
@@ -69,29 +73,27 @@ export default function Page() {
   } = useBanking()
 
   const getUserFirstName = useCallback(() => {
-    if (!userProfile?.name) return "User"
-    const parts = userProfile.name.split(" ")
-    return parts[0] || "User"
-  }, [userProfile?.name])
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const loggedIn = localStorage.getItem("chase_logged_in") === "true"
-      setIsLoggedIn(loggedIn)
-      setIsCheckingAuth(false)
+    if (profile?.full_name) {
+      const parts = profile.full_name.split(" ")
+      return parts[0] || "User"
     }
-    checkAuth()
-  }, [])
+    if (userProfile?.name) {
+      const parts = userProfile.name.split(" ")
+      return parts[0] || "User"
+    }
+    return "User"
+  }, [profile?.full_name, userProfile?.name])
+
+
 
   useEffect(() => {
-    if (isLocked && isLoggedIn) {
-      console.log("[v0] App is locked, showing unlock screen")
+    if (isLocked && isAuthenticated) {
       setShowBiometricPrompt(true)
     }
-  }, [isLocked, isLoggedIn])
+  }, [isLocked, isAuthenticated])
 
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!isAuthenticated) return
 
     const deviceInfo = navigator.userAgent.includes("Mobile") ? "Mobile Device" : "Desktop Browser"
 
@@ -123,14 +125,14 @@ export default function Page() {
     return () => {
       clearTimeout(welcomeTimer)
     }
-  }, [isLoggedIn, addActivity, addLoginHistory, toast, getUserFirstName])
+  }, [isAuthenticated, addActivity, addLoginHistory, toast, getUserFirstName])
 
   const handleLogin = () => {
-    setIsLoggedIn(true)
-    localStorage.setItem("chase_logged_in", "true")
+    // Auth is now handled by AuthContext - this is kept for LoginPage compatibility
+    // The user will be redirected after successful Supabase auth
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (addActivity) {
       addActivity({
         action: "Signed out",
@@ -138,17 +140,10 @@ export default function Page() {
         location: "Current Session",
       })
     }
-    setIsLoggedIn(false)
-    // Clear all session data on logout
-    localStorage.removeItem("chase_logged_in")
-    localStorage.removeItem("chase_user_id")
-    localStorage.removeItem("chase_user_data")
-    localStorage.removeItem("chase_user_role")
-    localStorage.removeItem("chase_user_name")
-    localStorage.removeItem("chase_user_email")
-    localStorage.removeItem("chase_user_accounts")
-    localStorage.removeItem("chase_session_token")
-    localStorage.removeItem("chase_last_login")
+    
+    // Use AuthContext signOut
+    await signOut()
+    
     setActiveView("accounts")
     toast({
       title: "Signed out successfully",
@@ -241,6 +236,8 @@ export default function Page() {
               onPayBills={() => setPayBillsOpen(true)}
               onAddAccount={() => setAddAccountOpen(true)}
               onTransfer={() => setTransferOpen(true)}
+              onAddFunds={() => setAddFundsOpen(true)}
+              onStripeDashboard={() => setStripeDashboardOpen(true)}
             />
             <AccountsSection
               onViewAccount={() => setAccountDetailsOpen(true)}
@@ -277,7 +274,7 @@ export default function Page() {
   }
 
   // Show loading state while checking auth
-  if (isCheckingAuth) {
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0a4fa6]/5 to-white">
         <div className="animate-pulse flex flex-col items-center gap-4">
@@ -291,7 +288,7 @@ export default function Page() {
     )
   }
 
-  if (!isLoggedIn) {
+  if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />
   }
 
@@ -320,7 +317,7 @@ export default function Page() {
             {appSettings?.biometricLogin ? "Unlock with Biometric" : "Unlock"}
           </button>
           <button
-            onClick={handleLogout}
+            onClick={() => signOut()}
             className="w-full mt-3 text-gray-600 py-2 text-sm hover:text-gray-900 transition-colors"
           >
             Sign out instead
@@ -337,7 +334,7 @@ export default function Page() {
         <main className="px-4 pt-5 touch-pan-y">
           <div className="mb-5">
             <h1 className="text-2xl font-bold text-foreground">
-              {getGreeting()}, {getUserFirstName()}
+              {getGreeting()}, {profile?.full_name?.split(" ")[0] || userProfile?.name?.split(" ")[0] || user?.email?.split("@")[0] || "User"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {new Date().toLocaleDateString("en-US", {
@@ -385,6 +382,12 @@ export default function Page() {
 
         {/* Dispute Transaction Drawer */}
         <DisputeTransactionDrawer open={disputeOpen} onOpenChange={setDisputeOpen} transactionId={disputeTransactionId} />
+
+        {/* Add Funds Drawer (Stripe) */}
+        <AddFundsDrawer open={addFundsOpen} onOpenChange={setAddFundsOpen} />
+
+        {/* Stripe Dashboard (Payout Reconciliation & Refunds) */}
+        <StripeDashboardDrawer open={stripeDashboardOpen} onOpenChange={setStripeDashboardOpen} />
       </div>
   )
 }

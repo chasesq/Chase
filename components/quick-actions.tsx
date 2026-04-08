@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Send, FileText, CreditCard, ArrowRightLeft } from "lucide-react"
+import { Plus, Send, FileText, CreditCard, ArrowRightLeft, Wallet, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface QuickActionsProps {
@@ -9,6 +9,8 @@ interface QuickActionsProps {
   onPayBills: () => void
   onAddAccount: () => void
   onTransfer?: () => void
+  onAddFunds?: () => void
+  onStripeDashboard?: () => void
 }
 
 export function QuickActions({
@@ -17,6 +19,8 @@ export function QuickActions({
   onPayBills,
   onAddAccount,
   onTransfer,
+  onAddFunds,
+  onStripeDashboard,
 }: QuickActionsProps) {
   return (
     <div className="flex gap-3 overflow-x-auto pb-2 px-1 scrollbar-hide momentum-scroll">
@@ -61,6 +65,26 @@ export function QuickActions({
         <CreditCard className="h-4 w-4 text-[#0a4fa6]" />
         <span>Pay bills</span>
       </Button>
+      {onAddFunds && (
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 whitespace-nowrap bg-[#0a4fa6] text-white border-0 chase-card-shadow hover:bg-[#083d85] rounded-full h-12 px-5 font-medium flex-shrink-0 transition-transform duration-150 active:scale-95"
+          onClick={onAddFunds}
+        >
+          <Wallet className="h-4 w-4" />
+          <span>Add Funds</span>
+        </Button>
+      )}
+      {onStripeDashboard && (
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 whitespace-nowrap bg-card border-0 chase-card-shadow hover:bg-muted/50 rounded-full h-12 px-5 font-medium flex-shrink-0 transition-transform duration-150 active:scale-95"
+          onClick={onStripeDashboard}
+        >
+          <BarChart3 className="h-4 w-4 text-[#0a4fa6]" />
+          <span>Payments</span>
+        </Button>
+      )}
     </div>
   )
 }

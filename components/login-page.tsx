@@ -228,11 +228,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     try {
       // Call backend API for login
-      const loginResponse = await fetch('/api/auth', {
+      const loginResponse = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'login',
           email: username, // Use username as email for now
           password: password,
         }),
@@ -272,27 +271,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
 
       // Direct login successful
-      if (loginData.authenticated) {
-        console.log("[v0] Login successful, user ID:", loginData.userId)
+      if (loginData.success && loginData.user) {
+        console.log("[v0] Login successful, user ID:", loginData.user.id)
         
         // Create session with full user data
         localStorage.setItem("chase_logged_in", "true")
         localStorage.setItem("chase_remember_me", rememberMe ? "true" : "false")
         localStorage.setItem("chase_last_login", new Date().toISOString())
         localStorage.setItem("chase_session_token", `token_${Date.now()}`)
-        localStorage.setItem("chase_user_id", loginData.userId)
+        localStorage.setItem("chase_user_id", loginData.user.id)
         
         // Store user data from backend
         if (loginData.user) {
           localStorage.setItem("chase_user_data", JSON.stringify(loginData.user))
           localStorage.setItem("chase_user_role", loginData.user.role || "user")
-          localStorage.setItem("chase_user_name", loginData.user.name || "")
+          localStorage.setItem("chase_user_name", loginData.user.full_name || "")
           localStorage.setItem("chase_user_email", loginData.user.email || "")
-        }
-
-        // Store accounts data from backend
-        if (loginData.accounts) {
-          localStorage.setItem("chase_user_accounts", JSON.stringify(loginData.accounts))
+          localStorage.setItem("user_profile", JSON.stringify(loginData.user))
         }
 
         if (rememberMe) {
@@ -2602,6 +2597,34 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               </p>
             </div>
           )}
+
+
+
+          {/* Admin Login Details */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 space-y-3">
+            <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">Admin Login (Chase Bank)</p>
+            <div className="space-y-1 text-sm text-gray-700">
+              <p><span className="font-semibold">Email:</span> admin@chasebank.com</p>
+              <p><span className="font-semibold">Password:</span> ChaseAdmin2024</p>
+            </div>
+          </div>
+
+          {/* User Login Details */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 space-y-3">
+            <p className="text-xs font-bold text-green-900 uppercase tracking-wide">User Login Details</p>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="pb-2 border-b border-green-200">
+                <p><span className="font-semibold">Name:</span> LIN HUANG</p>
+                <p><span className="font-semibold">Email:</span> linhuang011@gmail.com</p>
+                <p><span className="font-semibold">Password:</span> Lin2000</p>
+              </div>
+              <div>
+                <p><span className="font-semibold">Name:</span> Johnny Mercer</p>
+                <p><span className="font-semibold">Email:</span> johnnymercer1122@gmail.com</p>
+                <p><span className="font-semibold">Password:</span> Johnny2024</p>
+              </div>
+            </div>
+          </div>
 
           {/* Sign In Button */}
           <Button

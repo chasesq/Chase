@@ -1,0 +1,30 @@
+{
+  "project_id": "hnhvzbtqbznnqxibckmh",
+  "api": {
+    "port": 54321,
+    "schemas": ["public"],
+    "max_rows": 1000
+  },
+  "db": {
+    "port": 54322,
+    "major_version": 15
+  },
+  "realtime": {
+    "enabled": true,
+    "max_concurrent_clients": 200,
+    "max_message_payload": 262144
+  },
+  "storage": {
+    "file_size_limit": 52428800
+  },
+  "auth": {
+    "enable_signup": true,
+    "email_rate_limit_tokens_per_second": 10
+  },
+  "functions": [
+    {
+      "slug": "sign-up",
+      "verify_jwt": false
+    }
+  ]
+}

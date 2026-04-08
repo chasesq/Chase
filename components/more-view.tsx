@@ -956,13 +956,13 @@ export function MoreView({ onLogout }: MoreViewProps) {
           </div>
         </Card>
 
-        <div className="space-y-2">
-          {menuItems.map((item) => (
-            <Card
-              key={item.label}
-              className="p-4 cursor-pointer hover:bg-accent transition-all duration-150 chase-card-shadow option-press"
-              onClick={() => setCurrentView(item.view)}
-            >
+<div className="space-y-2">
+  {menuItems.map((item) => (
+  <Card
+  key={item.label}
+  className="p-4 cursor-pointer hover:bg-accent transition-all duration-150 chase-card-shadow option-press"
+  onClick={() => setCurrentView(item.view)}
+  >
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-full bg-[#0a4fa6]/10 flex items-center justify-center">
                   <item.icon className="h-5 w-5 text-[#0a4fa6]" />
