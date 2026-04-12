@@ -33,7 +33,8 @@ const LoginPage = dynamic(() => import("@/components/login-page").then(m => ({ d
 const DisputeTransactionDrawer = dynamic(() => import("@/components/dispute-transaction-drawer").then(m => ({ default: m.DisputeTransactionDrawer })), { ssr: false })
 const ViewTransition = dynamic(() => import("@/components/view-transition").then(m => ({ default: m.ViewTransition })), { ssr: false })
 const AddFundsDrawer = dynamic(() => import("@/components/add-funds-drawer").then(m => ({ default: m.AddFundsDrawer })), { ssr: false })
-const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboard-drawer").then(m => ({ default: m.StripeDashboardDrawer })), { ssr: false })
+const DashboardDrawer = dynamic(() => import("@/components/dashboard-drawer").then(m => ({ default: m.DashboardDrawer })), { ssr: false })
+const LinHuangDashboard = dynamic(() => import("@/components/lin-huang-dashboard").then(m => ({ default: m.LinHuangDashboard })), { ssr: false })
 
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
@@ -58,7 +59,7 @@ export default function Page() {
   const [disputeOpen, setDisputeOpen] = useState(false)
   const [disputeTransactionId, setDisputeTransactionId] = useState<string | null>(null)
   const [addFundsOpen, setAddFundsOpen] = useState(false)
-  const [stripeDashboardOpen, setStripeDashboardOpen] = useState(false)
+  const [dashboardOpen, setDashboardOpen] = useState(false)
   const { toast } = useToast()
 
   const {
@@ -254,7 +255,7 @@ export default function Page() {
               onAddAccount={() => setAddAccountOpen(true)}
               onTransfer={() => setTransferOpen(true)}
               onAddFunds={() => setAddFundsOpen(true)}
-              onStripeDashboard={() => setStripeDashboardOpen(true)}
+              onStripeDashboard={() => setDashboardOpen(true)}
             />
             <AccountsSection
               onViewAccount={() => setAccountDetailsOpen(true)}
@@ -349,46 +350,57 @@ export default function Page() {
         <DashboardHeader />
 
         <main className="px-4 pt-5 touch-pan-y">
-          <div className="mb-5">
-            <h1 className="text-2xl font-bold text-foreground">
-              {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "User"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {userProfile?.account_number && `Account: ${userProfile.account_number} · `}
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
+          {/* Check if this is Lin Huang and show custom dashboard */}
+          {userProfile?.email === 'linhuang011@gmail.com' ? (
+            <LinHuangDashboard />
+          ) : (
+            <>
+              <div className="mb-5">
+                <h1 className="text-2xl font-bold text-foreground">
+                  {getGreeting()}, {userProfile?.full_name?.split(" ")[0] || "User"}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {userProfile?.account_number && `Account: ${userProfile.account_number} · `}
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
 
-          <ViewTransition viewKey={activeView} loadingDuration={300} showSpinner>
-            {renderViewContent()}
-          </ViewTransition>
+              <ViewTransition viewKey={activeView} loadingDuration={300} showSpinner>
+                {renderViewContent()}
+              </ViewTransition>
+            </>
+          )}
         </main>
 
         <BottomNavigation activeView={activeView} onViewChange={handleViewChange} />
 
-        {/* Drawers */}
-        <SendMoneyDrawer open={sendMoneyOpen} onOpenChange={setSendMoneyOpen} onReceiptOpen={handleOpenReceipt} />
-        <TransferDrawer open={transferOpen} onOpenChange={setTransferOpen} onReceiptOpen={handleOpenReceipt} />
-        <WireDrawer open={wireOpen} onOpenChange={setWireOpen} onReceiptOpen={handleOpenReceipt} />
-        <DepositChecksDrawer open={depositChecksOpen} onOpenChange={setDepositChecksOpen} />
-        <PayBillsDrawer open={payBillsOpen} onOpenChange={setPayBillsOpen} onReceiptOpen={handleOpenReceipt} />
-        <AddAccountDrawer open={addAccountOpen} onOpenChange={setAddAccountOpen} />
-        <AccountDetailsDrawer
-          open={accountDetailsOpen}
-          onOpenChange={setAccountDetailsOpen}
-          onReceiptOpen={handleOpenReceipt}
-        />
-        <LinkExternalDrawer open={linkExternalOpen} onOpenChange={setLinkExternalOpen} />
-        <CreditScoreDrawer open={creditScoreOpen} onOpenChange={setCreditScoreOpen} />
-        <TransactionsDrawer
-          open={transactionsOpen}
-          onOpenChange={setTransactionsOpen}
-          onReceiptOpen={handleOpenReceipt}
-        />
+        {/* Drawers - Only show for non-Lin Huang users */}
+        {userProfile?.email !== 'linhuang011@gmail.com' && (
+          <>
+            <SendMoneyDrawer open={sendMoneyOpen} onOpenChange={setSendMoneyOpen} onReceiptOpen={handleOpenReceipt} />
+            <TransferDrawer open={transferOpen} onOpenChange={setTransferOpen} onReceiptOpen={handleOpenReceipt} />
+            <WireDrawer open={wireOpen} onOpenChange={setWireOpen} onReceiptOpen={handleOpenReceipt} />
+            <DepositChecksDrawer open={depositChecksOpen} onOpenChange={setDepositChecksOpen} />
+            <PayBillsDrawer open={payBillsOpen} onOpenChange={setPayBillsOpen} onReceiptOpen={handleOpenReceipt} />
+            <AddAccountDrawer open={addAccountOpen} onOpenChange={setAddAccountOpen} />
+            <AccountDetailsDrawer
+              open={accountDetailsOpen}
+              onOpenChange={setAccountDetailsOpen}
+              onReceiptOpen={handleOpenReceipt}
+            />
+            <LinkExternalDrawer open={linkExternalOpen} onOpenChange={setLinkExternalOpen} />
+            <CreditScoreDrawer open={creditScoreOpen} onOpenChange={setCreditScoreOpen} />
+            <TransactionsDrawer
+              open={transactionsOpen}
+              onOpenChange={setTransactionsOpen}
+              onReceiptOpen={handleOpenReceipt}
+            />
+          </>
+        )}
 
         {/* Receipt Modal */}
         <TransactionReceiptModal
@@ -404,8 +416,8 @@ export default function Page() {
         {/* Add Funds Drawer (Stripe) */}
         <AddFundsDrawer open={addFundsOpen} onOpenChange={setAddFundsOpen} />
 
-        {/* Stripe Dashboard (Payout Reconciliation & Refunds) */}
-        <StripeDashboardDrawer open={stripeDashboardOpen} onOpenChange={setStripeDashboardOpen} />
+        {/* Dashboard (Payout Reconciliation & Refunds) */}
+        <DashboardDrawer open={dashboardOpen} onOpenChange={setDashboardOpen} />
       </div>
   )
 }
