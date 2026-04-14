@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/lib/auth-context'
 
 export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [firstName, setFirstName] = useState('')
@@ -22,6 +23,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { signUp } = useAuth()
 
   // Password validation
   const hasMinLength = password.length >= 8
@@ -49,34 +51,29 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     }
 
     try {
-      const response = await fetch('/api/auth/sign-up', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `${firstName} ${lastName}`.trim(),
-          email,
-          password,
-          phone_number: phone,
-        }),
+      // Use the auth context signUp method
+      const { error: signUpError, user } = await signUp(email, password, {
+        full_name: `${firstName} ${lastName}`.trim(),
+        phone,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Sign up failed')
+      if (signUpError) {
+        throw signUpError
       }
 
-      // Store user profile data and set logged-in flag
-      if (data.user) {
-        localStorage.setItem('user_profile', JSON.stringify(data.user))
-        localStorage.setItem('chase_logged_in', 'true')
-        localStorage.setItem('userEmail', email)
-      }
+      console.log('[v0] Sign-up successful, user:', user)
 
-      // Redirect to home dashboard on success (session is created server-side)
+      // Give localStorage a moment to sync before redirecting
+      // The AuthContext has already updated its state, so the next page load will see isAuthenticated = true
+      await new Promise(resolve => setTimeout(resolve, 100))
+
+      // Redirect to home dashboard on success
+      // The app will detect isAuthenticated = true and show the dashboard
       router.push('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during sign up')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during sign up'
+      console.error('[v0] Sign-up error:', errorMessage)
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

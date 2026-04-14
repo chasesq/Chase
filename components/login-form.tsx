@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertCircle, Mail, Shield, Eye, EyeOff, Lock } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
   const [showPassword, setShowPassword] = useState(false)
@@ -18,6 +19,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { signIn } = useAuth()
 
 
 
@@ -28,32 +30,25 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setErrorCode(null)
 
     try {
-      // Send login request to API
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
+      // Use the auth context signIn method
+      const { error: signInError } = await signIn(email, password)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        setErrorCode(data.code || null)
-        throw new Error(data.error || 'Login failed')
+      if (signInError) {
+        throw signInError
       }
 
-      // Store user profile in localStorage
-      if (data.user) {
-        localStorage.setItem('user_profile', JSON.stringify(data.user))
-      }
-      localStorage.setItem('userEmail', email)
-      localStorage.setItem('chase_logged_in', 'true')
+      console.log('[v0] Sign-in successful')
+
+      // Give localStorage a moment to sync before redirecting
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Redirect to home dashboard on success
+      // The AuthContext has already updated its state, so the next page load will see isAuthenticated = true
       router.push('/')
-      router.refresh() // Refresh to update auth state
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred during sign in. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred during sign in. Please try again.'
+      console.error('[v0] Sign-in error:', errorMessage)
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
