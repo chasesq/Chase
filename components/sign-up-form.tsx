@@ -66,8 +66,15 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         throw new Error(data.error || 'Sign up failed')
       }
 
-      // Redirect to success page - user needs to verify email before logging in
-      router.push('/auth/sign-up-success')
+      // Store user profile data and set logged-in flag
+      if (data.user) {
+        localStorage.setItem('user_profile', JSON.stringify(data.user))
+        localStorage.setItem('chase_logged_in', 'true')
+        localStorage.setItem('userEmail', email)
+      }
+
+      // Redirect to home dashboard on success (session is created server-side)
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during sign up')
     } finally {
