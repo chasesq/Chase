@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       }
 
       const newUserId = data[0]?.id
+      const newUser = data[0]
 
       // Auto-generate a checking account with zero balance for the new user
       const fullAccountNumber = generateAccountNumber()

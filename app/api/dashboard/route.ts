@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
 
     // Fetch all data in parallel
     const [
-      userResult,
       accountsResult,
       transactionsResult,
       billsResult,
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest) {
       creditResult,
       spendingResult
     ] = await Promise.all([
-      supabase.from('users').select('account_number, total_balance, total_checking_balance, total_savings_balance, total_savings_goals').eq('id', userId).single(),
       supabase.from('accounts').select('*').eq('user_id', userId),
       supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
       supabase.from('bill_payments').select('*').eq('user_id', userId).order('due_date', { ascending: true }),
@@ -35,7 +33,6 @@ export async function GET(request: NextRequest) {
       supabase.from('transactions').select('category, amount').eq('user_id', userId)
     ])
 
-    const userData = userResult.data
     const accounts = accountsResult.data || []
     const transactions = transactionsResult.data || []
     const bills = billsResult.data || []
@@ -47,12 +44,16 @@ export async function GET(request: NextRequest) {
     const totalBalance = accounts.reduce((sum, acc) => sum + (acc.balance || 0), 0)
     const unreadNotifications = notifications.filter(n => !n.is_read).length
     
-    // Get user account details
-    const accountNumber = userData?.account_number || ""
-    const userTotalBalance = userData?.total_balance || 0
-    const userTotalCheckingBalance = userData?.total_checking_balance || 0
-    const userTotalSavingsBalance = userData?.total_savings_balance || 0
-    const userTotalSavingsGoals = userData?.total_savings_goals || 0
+    // Get user account details from accounts table
+    // If user has a checking account, get its full account number
+    const checkingAccount = accounts.find(acc => acc.account_type === 'checking')
+    const accountNumber = checkingAccount?.full_account_number || ""
+    const userTotalCheckingBalance = checkingAccount?.balance || 0
+    const userTotalSavingsBalance = accounts
+      .filter(acc => acc.account_type === 'savings')
+      .reduce((sum, acc) => sum + (acc.balance || 0), 0)
+    const userTotalBalance = totalBalance
+    const userTotalSavingsGoals = 0 // Will be populated from savings_goals table if it exists
 
     // Calculate spending by category
     const spendingByCategory: Record<string, number> = {}

@@ -53,12 +53,7 @@ export async function createUser(data: {
       government_id_type,
       account_type_preference,
       currency_preference,
-      language_preference,
-      account_number,
-      total_balance,
-      total_checking_balance,
-      total_savings_balance,
-      total_savings_goals
+      language_preference
     ) VALUES (
       ${data.email},
       ${data.password_hash},
@@ -69,16 +64,23 @@ export async function createUser(data: {
       ${data.government_id_type || null},
       ${data.account_type_preference || null},
       ${data.currency_preference || 'USD'},
-      ${data.language_preference || 'en'},
-      ${accountNumber},
-      0.00,
-      0.00,
-      0.00,
-      0.00
+      ${data.language_preference || 'en'}
     )
-    RETURNING id, email, full_name, phone, account_number, total_balance, total_checking_balance, total_savings_balance, created_at
+    RETURNING id, email, full_name, phone, created_at
   `
-  return result[0]
+  
+  const user = result[0]
+  if (!user) return null
+  
+  // Try to add account metadata if the columns exist
+  return {
+    ...user,
+    account_number: accountNumber,
+    total_balance: 0,
+    total_checking_balance: 0,
+    total_savings_balance: 0,
+    total_savings_goals: 0,
+  }
 }
 
 export async function updateUser(id: string, data: Partial<{

@@ -222,18 +222,23 @@ export default function UserDashboardPage() {
                 <p className="text-xs text-white/50 uppercase tracking-wider font-medium">Account Number</p>
                 <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
                   <Shield className="h-5 w-5 text-blue-400 flex-shrink-0" />
-                  <code className="font-mono text-sm text-white font-medium flex-1">{userProfile.accountNumber || "Not set"}</code>
+                  <code className="font-mono text-sm text-white font-medium flex-1">
+                    {accounts.length > 0 && accounts[0]?.full_account_number 
+                      ? accounts[0].full_account_number 
+                      : userProfile?.accountNumber || "Not set"}
+                  </code>
                   <button 
                     onClick={() => {
-                      if (userProfile.accountNumber) {
-                        navigator.clipboard.writeText(userProfile.accountNumber)
-                        setCopiedAccount(userProfile.accountNumber)
-                        setTimeout(() => setCopiedAccount(null), 2000)
+                      const accountNum = accounts.length > 0 && accounts[0]?.full_account_number 
+                        ? accounts[0].full_account_number 
+                        : userProfile?.accountNumber
+                      if (accountNum) {
+                        copyAccountNumber(accountNum)
                       }
                     }}
                     className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
                   >
-                    {copiedAccount === userProfile.accountNumber ? (
+                    {copiedAccount ? (
                       <CheckCircle2 className="h-4 w-4 text-green-400" />
                     ) : (
                       <Copy className="h-4 w-4" />
@@ -248,7 +253,7 @@ export default function UserDashboardPage() {
                 <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
                   <DollarSign className="h-5 w-5 text-emerald-400 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalBalance)}</p>
+                    <p className="font-bold text-lg text-white">${formatBalance(totalBalance)}</p>
                   </div>
                 </div>
               </div>
@@ -259,7 +264,9 @@ export default function UserDashboardPage() {
                 <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
                   <Wallet className="h-5 w-5 text-blue-400 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalCheckingBalance)}</p>
+                    <p className="font-bold text-lg text-white">
+                      ${formatBalance(accounts.find(acc => acc.account_type === 'checking')?.balance)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -270,7 +277,11 @@ export default function UserDashboardPage() {
                 <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
                   <PiggyBank className="h-5 w-5 text-emerald-400 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalSavingsBalance)}</p>
+                    <p className="font-bold text-lg text-white">
+                      ${formatBalance(accounts
+                        .filter(acc => acc.account_type === 'savings')
+                        .reduce((sum, acc) => sum + (acc.balance || 0), 0))}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -281,7 +292,7 @@ export default function UserDashboardPage() {
                 <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
                   <Award className="h-5 w-5 text-amber-400 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalSavingsGoals)}</p>
+                    <p className="font-bold text-lg text-white">${formatBalance(userProfile?.totalSavingsGoals || 0)}</p>
                   </div>
                 </div>
               </div>
