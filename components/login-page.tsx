@@ -1808,6 +1808,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                         />
                       </div>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code *</label>
+                      <input
+                        type="text"
+                        value={signupData.zip}
+                        onChange={(e) => setSignupData({ ...signupData, zip: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#117aca]"
+                        placeholder="12345"
+                      />
+                    </div>
                   </div>
                 </>
               )}
