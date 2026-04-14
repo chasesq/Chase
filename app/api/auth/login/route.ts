@@ -50,15 +50,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch user profile from profiles table
+    // Fetch user profile from users table
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+      .from('users')
       .select('*')
       .eq('id', authData.user.id)
       .single()
 
     if (profileError) {
       console.error('[Supabase Login] Profile error:', profileError.message)
+      // Try profiles table as fallback
+      const { data: fallbackProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+      
+      if (fallbackProfile) {
+        console.log('[Supabase Login] Found profile in fallback profiles table')
+      }
     }
 
     // Build user profile from auth data and profile table

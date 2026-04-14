@@ -3,21 +3,16 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AlertCircle, Mail } from 'lucide-react'
+import { AlertCircle, Mail, Shield, Eye, EyeOff, Lock } from 'lucide-react'
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
+  const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -26,6 +21,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [isResending, setIsResending] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
   const handleResendVerification = async () => {
     if (!email) {
@@ -64,6 +60,22 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setResendSuccess(false)
 
     try {
+      // Sign in with Supabase directly to establish session
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (authError) {
+        if (authError.message.includes('Email not confirmed')) {
+          setErrorCode('EMAIL_NOT_CONFIRMED')
+          throw new Error('Please verify your email before logging in.')
+        }
+        setErrorCode('INVALID_CREDENTIALS')
+        throw new Error('Invalid email or password.')
+      }
+
+      // Fetch user profile from API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -72,17 +84,16 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
 
       const data = await response.json()
 
-      if (!response.ok) {
-        setErrorCode(data.code || null)
-        throw new Error(data.error || 'Login failed')
-      }
-
       // Store user profile in localStorage
-      localStorage.setItem('user_profile', JSON.stringify(data.user))
+      if (data.user) {
+        localStorage.setItem('user_profile', JSON.stringify(data.user))
+      }
       localStorage.setItem('userEmail', email)
+      localStorage.setItem('chase_logged_in', 'true')
 
-      // Redirect to dashboard on success
+      // Redirect to home dashboard on success
       router.push('/')
+      router.refresh() // Refresh to update auth state
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred during sign in. Please try again.')
     } finally {
@@ -91,83 +102,129 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   }
 
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {resendSuccess && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <Mail className="h-4 w-4 text-green-500" />
-                  <p className="text-sm text-green-600">Verification email sent! Please check your inbox.</p>
-                </div>
-              )}
-              {error && (
-                <div className="flex flex-col gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-red-500" />
-                    <p className="text-sm text-red-600">{error}</p>
-                  </div>
-                  {(errorCode === 'EMAIL_NOT_CONFIRMED' || errorCode === 'INVALID_CREDENTIALS') && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResendVerification}
-                      disabled={isResending}
-                      className="w-fit text-xs"
-                    >
-                      {isResending ? 'Sending...' : 'Resend verification email'}
-                    </Button>
-                  )}
-                </div>
-              )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Login'}
+    <div className={cn('flex flex-col w-full', className)} {...props}>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <Shield className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-semibold text-white">Chase</span>
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
+        <p className="text-white/60 text-sm">Sign in to access your secure banking dashboard</p>
+      </div>
+
+      <form onSubmit={handleLogin} className="space-y-5">
+        {/* Email Field */}
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-xs font-medium text-white/70 uppercase tracking-wider">
+            Email Address
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              id="email"
+              type="email"
+              placeholder="your@email.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="pl-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-500/50 focus:ring-blue-500/20"
+            />
+          </div>
+        </div>
+
+        {/* Password Field */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-xs font-medium text-white/70 uppercase tracking-wider">
+              Password
+            </Label>
+            <Link
+              href="/auth/forgot-password"
+              className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter your password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pl-10 pr-10 h-12 bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-blue-500/50 focus:ring-blue-500/20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/60 transition-colors"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Success Message */}
+        {resendSuccess && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+            <Mail className="h-4 w-4 text-emerald-400" />
+            <p className="text-sm text-emerald-400">Verification email sent! Please check your inbox.</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="flex flex-col gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-400" />
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+            {(errorCode === 'EMAIL_NOT_CONFIRMED' || errorCode === 'INVALID_CREDENTIALS') && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResendVerification}
+                disabled={isResending}
+                className="w-fit text-xs border-white/20 text-white/70 hover:bg-white/10"
+              >
+                {isResending ? 'Sending...' : 'Resend verification email'}
               </Button>
+            )}
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <Button 
+          type="submit" 
+          className="w-full h-12 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-medium text-sm transition-all duration-300"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Signing in...
             </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/sign-up" className="underline underline-offset-4">
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          ) : (
+            'Sign In'
+          )}
+        </Button>
+
+        {/* Sign Up Link */}
+        <div className="pt-4 border-t border-white/10 text-center">
+          <p className="text-sm text-white/60">
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/sign-up" className="text-blue-400 hover:text-blue-300 font-medium underline underline-offset-2">
+              Create account
+            </Link>
+          </p>
+        </div>
+      </form>
     </div>
   )
 }

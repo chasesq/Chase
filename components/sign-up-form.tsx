@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff, User, Mail, Phone, Lock, CheckCircle2, Shield } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
   // Password validation
   const hasMinLength = password.length >= 8
@@ -66,8 +68,26 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         throw new Error(data.error || 'Sign up failed')
       }
 
-      // Redirect to success page - user needs to verify email before logging in
-      router.push('/auth/sign-up-success')
+      // Auto-login after successful sign-up (user is auto-confirmed)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        console.error('[v0] Auto-login failed:', signInError.message)
+        // If auto-login fails, redirect to login page
+        router.push('/auth/login')
+        return
+      }
+
+      // Store user profile data
+      if (data.user) {
+        localStorage.setItem('user_profile', JSON.stringify(data.user))
+      }
+
+      // Redirect to home dashboard on success
+      router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during sign up')
     } finally {
