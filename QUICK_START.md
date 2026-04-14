@@ -1,313 +1,471 @@
-# Quick Start Guide - Chase Bank Login Application
+# Quick Start Guide - Neon Database & Chase Banking App
 
-## 🚀 Getting Started
+Get started with the Chase Banking App using Neon serverless PostgreSQL database.
 
-### Default Test Account
+---
+
+## Environment Setup
+
+### Prerequisites
+- Node.js 18+
+- Neon database connected via Vercel integration
+- `DATABASE_URL` environment variable automatically set
+
+### Install Dependencies
+```bash
+npm install @neondatabase/serverless
 ```
-Username: CHUN HUNG
-Email: hungchun164@gmail.com
-Password: Chun2000
+
+The app is already configured. No manual setup needed!
+
+---
+
+## User Authentication Flow
+
+### Sign Up
+```typescript
+// In sign-up component or API route
+import { createUser } from '@/lib/db'
+import { hashPassword } from '@/lib/auth'
+
+const signUpUser = async (email: string, password: string, fullName: string) => {
+  // Hash password
+  const passwordHash = await hashPassword(password)
+  
+  // Create user in database
+  const user = await createUser({
+    email,
+    password_hash: passwordHash,
+    full_name: fullName
+  })
+  
+  // User created with account number and zero balances
+  console.log('New user:', user)
+  // { id, email, full_name, account_number, total_balance: 0 }
+}
+```
+
+### Sign In
+```typescript
+import { getUserByEmail } from '@/lib/db'
+import { comparePassword } from '@/lib/auth'
+
+const signInUser = async (email: string, password: string) => {
+  const user = await getUserByEmail(email)
+  if (!user) throw new Error('User not found')
+  
+  const isValid = await comparePassword(password, user.password_hash)
+  if (!isValid) throw new Error('Invalid password')
+  
+  return user
+}
 ```
 
 ---
 
-## 📍 How to Access Each Feature
+## Working with Accounts
 
-### 1️⃣ Sign Up
-**Location**: Below "Forgot username or password?" link → Click "Sign up for Chase online"
+### Get User's Accounts
+```typescript
+import { getUserAccounts } from '@/lib/db'
 
-**Steps**:
-1. Enter your first and last name
-2. Enter your email address
-3. Enter your phone number
-4. Continue to step 2
-5. Enter your full address, city, state, ZIP
-6. Enter your Social Security Number
-7. Enter your date of birth
-8. Continue to step 3
-9. Create a username and password (min 8 characters)
-10. Confirm your password
-11. Accept terms and conditions
-12. Click "Create Account"
-13. Check your email for verification token
-14. You can now sign in with your new credentials!
+const loadAccounts = async (userId: string) => {
+  const accounts = await getUserAccounts(userId)
+  
+  accounts.forEach(account => {
+    console.log(`${account.name}: $${account.balance}`)
+  })
+}
+```
 
-**Real-Time Features**:
-- Account immediately created in Supabase database
-- Email verification token sent
-- Username and password stored securely with hashing
-- Session automatically created upon successful signup
+### Create a New Account
+```typescript
+import { createAccount } from '@/lib/db'
 
----
+const createNewSavingsAccount = async (userId: string) => {
+  const account = await createAccount(userId, {
+    account_type: 'savings',
+    account_number: '****5678',
+    balance: 0,
+    currency: 'USD'
+  })
+  
+  return account
+}
+```
 
-### 2️⃣ Open a New Account
-**Location**: Below "Forgot username or password?" link → Click "Open a new account"
+### Get Total Balance
+```typescript
+import { getUserTotalBalance } from '@/lib/db'
 
-**Steps**:
-1. Choose your account type:
-   - **Checking Account** - $0 to open, $300 bonus
-   - **Savings Account** - Earn 4.25% APY
-   - **Money Market** - Earn 5.00% APY
-   - **Credit Cards** - Various options
-   - **Investment Account** - External link
-
-2. View account benefits
-3. Click "Open Account on Chase.com" (or complete application)
-4. Account details:
-   - Unique account number generated
-   - Routing number: 011000015 (Chase)
-   - Interest rates applied automatically
-   - Initial deposit processed if provided
-
-**Real-Time Features**:
-- Account created in database immediately
-- Balance updated in real-time
-- Interest rates applied
-- Transaction record created for initial deposit
-- Notification sent to user
-- Account accessible across all devices
+const getTotalBalance = async (userId: string) => {
+  const total = await getUserTotalBalance(userId)
+  console.log(`Total balance: $${total}`)
+  return total
+}
+```
 
 ---
 
-### 3️⃣ Forgot Username or Password
-**Location**: Click "Forgot username or password?" on login page
+## Recording Transactions
 
-#### Option A: Quick Recovery (Email/Phone)
-1. Click "Forgot username or password?"
-2. Select either "Forgot Username" or "Forgot Password"
-3. Choose recovery method (Email, Phone, or SSN)
-4. Enter your information
-5. Receive 6-digit code via email/SMS
-6. Enter verification code
-7. For username: See your username displayed
-8. For password: Enter new password (min 8 characters with complexity)
-9. Confirm new password
-10. Success! You can now login
+### Debit Transaction
+```typescript
+import { 
+  createTransaction, 
+  getAccountBalance, 
+  updateAccountBalance 
+} from '@/lib/db'
 
-#### Option B: Identity Verification
-1. Click "Forgot username or password?"
-2. Click "Verify Your Identity"
-3. Enter your Social Security Number (SSN) or Tax ID
-4. Enter Account, Card, or Application Number
-5. Click "Continue"
-6. System verifies your identity against database
-7. If you forgot username: Username displayed
-8. If you forgot password: Proceed to password reset
+const makeWithdrawal = async (
+  userId: string,
+  accountId: string,
+  amount: number
+) => {
+  // Check balance
+  const { balance } = await getAccountBalance(accountId)
+  if (balance < amount) throw new Error('Insufficient funds')
+  
+  // Deduct from account
+  const newBalance = balance - amount
+  await updateAccountBalance(accountId, newBalance)
+  
+  // Record transaction
+  const transaction = await createTransaction(userId, accountId, {
+    type: 'debit',
+    amount,
+    description: 'Withdrawal',
+    category: 'withdrawal'
+  })
+  
+  return transaction
+}
+```
 
-#### Option C: No SSN?
-1. Click "Forgot username or password?"
-2. Click "Verify Your Identity"
-3. Click "Don't have a Social Security number?"
-4. Select ID type (Passport, Driver's License, or ITIN)
-5. Enter country/state
-6. Enter identification number
-7. System verifies identity
-8. Proceed with username/password recovery
-
-#### Option D: Authorized User
-1. Click "Forgot username or password?"
-2. Click "Verify Your Identity"
-3. Click "I'm an authorized user on someone else's account"
-4. Enter your name
-5. Enter primary account holder's name
-6. Select your relationship to account holder
-7. System verifies authorized user status
-8. Proceed with recovery
-
-**Real-Time Features**:
-- 6-digit codes generated and sent instantly
-- Identity verification against database
-- Password reset email sent
-- New credentials synced across devices
-- Activity logged in security audit trail
-
----
-
-### 4️⃣ Privacy & Security
-**Location**: Click "Privacy & Security" link below login form
-
-**Includes**:
-- **Privacy Policy**: Full privacy disclosure
-- **Security Center**: Security features and best practices
-- **Terms of Service**: Legal terms and conditions
-
-**All pages open in new window for reference**
+### Credit Transaction
+```typescript
+const makeDeposit = async (
+  userId: string,
+  accountId: string,
+  amount: number,
+  source: string = 'Deposit'
+) => {
+  const { balance } = await getAccountBalance(accountId)
+  const newBalance = balance + amount
+  
+  await updateAccountBalance(accountId, newBalance)
+  
+  const transaction = await createTransaction(userId, accountId, {
+    type: 'credit',
+    amount,
+    description: source,
+    category: 'deposit'
+  })
+  
+  return transaction
+}
+```
 
 ---
 
-### 5️⃣ Additional Resources
-**Location**: Below login form
+## Managing Transactions
 
-- **FAQ**: Frequently asked questions
-  - Login & Sign In
-  - Account Management
-  - Identity Verification
-  - Security Tips
-  - General Questions
+### Get Transaction History
+```typescript
+import { getAccountTransactions } from '@/lib/db'
 
-- **Terms**: Complete terms of service
-
-- **More**: Additional options and resources
-
----
-
-## 🔐 Security Features You Can Test
-
-### 1. Password Requirements
-When creating or resetting password:
-- Minimum 8 characters ✓
-- At least one uppercase letter ✓
-- At least one lowercase letter ✓
-- At least one number ✓
-
-### 2. Email Validation
-The system validates all email addresses:
-- Must contain @ symbol
-- Must be in valid email format
-- Checked against existing accounts
-
-### 3. SSN/Account Number Masking
-- SSN shown as dots until "Show" is clicked
-- Account numbers only show last 4 digits
-- Full numbers stored securely in database
-
-### 4. Token Expiration
-Security tokens:
-- 6-digit codes generated per request
-- Expire after 60 seconds
-- Can regenerate new code if needed
-
-### 5. Remember Me Option
-- Saves username locally (not password)
-- Only for convenience
-- Session still requires full login
+const getTransactionHistory = async (accountId: string, limit = 50) => {
+  const transactions = await getAccountTransactions(accountId, limit)
+  
+  transactions.forEach(tx => {
+    console.log(`${tx.date}: ${tx.description} - ${tx.type} $${tx.amount}`)
+  })
+  
+  return transactions
+}
+```
 
 ---
 
-## 💾 Database Real-Time Sync
+## Working with Notifications
 
-All operations sync to Supabase in real-time:
+### Send Notification
+```typescript
+import { createNotification } from '@/lib/db'
 
-✅ **Signup** - New user record created immediately
-✅ **Account Opening** - New account with balance created
-✅ **Password Reset** - New password hash stored
-✅ **Login History** - Every login tracked
-✅ **Notifications** - Sent in real-time
-✅ **Cross-Device Sync** - Changes visible on all devices
+const notifyUser = async (userId: string, title: string, message: string) => {
+  const notification = await createNotification(userId, {
+    title,
+    message,
+    type: 'info',
+    category: 'general'
+  })
+  
+  return notification
+}
+```
 
----
+### Mark Notification as Read
+```typescript
+import { markNotificationAsRead } from '@/lib/db'
 
-## 🔍 Test Scenarios
+const readNotification = async (notificationId: string) => {
+  await markNotificationAsRead(notificationId)
+}
+```
 
-### Test Case 1: Complete Signup
-1. Click "Sign up for Chase online"
-2. Fill in all required information
-3. Verify account created in database
-4. Try to login with new credentials
+### Get Unread Count
+```typescript
+import { getUnreadNotificationCount } from '@/lib/db'
 
-### Test Case 2: Recover Forgotten Username
-1. Click "Forgot username or password?"
-2. Select "Forgot Username"
-3. Enter email address
-4. Enter verification code (displayed in toast)
-5. See username retrieved
-
-### Test Case 3: Reset Password
-1. Click "Forgot username or password?"
-2. Select "Forgot Password"
-3. Enter email and verification method
-4. Enter verification code
-5. Create new password (meets requirements)
-6. Login with new password
-
-### Test Case 4: Open Account
-1. Click "Open a new account"
-2. Select "Checking Account"
-3. View benefits
-4. Click "Open Account on Chase.com"
-5. New account created in database
-6. Account appears in dashboard after login
-
-### Test Case 5: Identity Verification
-1. Click "Forgot username or password?"
-2. Click "Verify Your Identity"
-3. Enter SSN and account number
-4. System verifies against database
-5. Username/password recovery proceeds
+const checkUnread = async (userId: string) => {
+  const count = await getUnreadNotificationCount(userId)
+  console.log(`You have ${count} unread notifications`)
+}
+```
 
 ---
 
-## 📊 What Happens Behind the Scenes
+## Bill Payments
 
-### When You Sign Up:
-1. **Validation**: All inputs validated client-side and server-side
-2. **Hashing**: Password hashed with bcrypt before storage
-3. **Database**: New user record inserted into Supabase
-4. **Email**: Verification token sent (simulated)
-5. **Session**: Session ready for immediate login
-6. **Notification**: Account creation notification generated
+### Create Bill Payment
+```typescript
+import { createBillPayment } from '@/lib/db'
 
-### When You Login:
-1. **Lookup**: Email looked up in users table
-2. **Hash Verify**: Password hash compared with stored hash
-3. **2FA Check**: Two-factor authentication status checked
-4. **OTP Generated**: One-time password generated if needed
-5. **Session Created**: Secure session token issued
-6. **History**: Login recorded in security audit log
-7. **Sync**: Account data synced with real-time updates
+const scheduleBillPayment = async (
+  userId: string,
+  accountId: string,
+  payee: string,
+  amount: number,
+  dueDate: string
+) => {
+  const bill = await createBillPayment(userId, accountId, {
+    payee,
+    amount,
+    due_date: dueDate,
+    frequency: 'monthly'
+  })
+  
+  return bill
+}
+```
 
-### When You Open Account:
-1. **Validation**: Account type and deposit validated
-2. **Generation**: Unique account number generated
-3. **Creation**: Account record created in database
-4. **Balance**: Initial deposit processed
-5. **Transaction**: Deposit transaction logged
-6. **Interest**: Interest rate applied based on type
-7. **Notification**: Account creation notification sent
-8. **Sync**: Account appears in dashboard in real-time
+### Get Bills
+```typescript
+import { getUserBillPayments } from '@/lib/db'
 
----
-
-## ⚠️ Important Notes
-
-- All passwords are hashed with bcrypt - never stored in plain text
-- Session tokens expire after period of inactivity
-- Account numbers are masked for security
-- SSN/sensitive data only partially visible unless you click "Show"
-- All transactions logged in audit trail
-- Multi-factor authentication strongly recommended
-- Device fingerprinting enabled for security monitoring
+const loadBills = async (userId: string) => {
+  const bills = await getUserBillPayments(userId)
+  
+  bills.forEach(bill => {
+    console.log(`${bill.payee}: $${bill.amount} due ${bill.due_date}`)
+  })
+  
+  return bills
+}
+```
 
 ---
 
-## 🆘 Need Help?
+## Transfers
 
-1. **Click "FAQ"** on login page for common questions
-2. **Click "Privacy & Security"** for security center
-3. **Click "Terms"** for legal information
-4. **Call 1-800-935-9935** for customer support (simulated)
+### Wire Transfer
+```typescript
+import { createWireTransfer } from '@/lib/db'
+
+const sendWireTransfer = async (
+  userId: string,
+  accountId: string,
+  recipientName: string,
+  recipientBank: string,
+  amount: number
+) => {
+  const wire = await createWireTransfer(userId, accountId, {
+    amount,
+    recipient_name: recipientName,
+    recipient_bank: recipientBank,
+    recipient_routing_number: '021000021',
+    recipient_account_number: '1234567890'
+  })
+  
+  return wire
+}
+```
+
+### Zelle Transfer
+```typescript
+import { createZelleTransfer } from '@/lib/db'
+
+const sendZelleTransfer = async (
+  userId: string,
+  accountId: string,
+  recipientName: string,
+  recipientEmail: string,
+  amount: number
+) => {
+  const zelle = await createZelleTransfer(userId, accountId, {
+    amount,
+    recipient_name: recipientName,
+    recipient_email: recipientEmail
+  })
+  
+  return zelle
+}
+```
 
 ---
 
-## ✨ Features Ready to Use Right Now
+## Dashboard Data
 
-✅ Full signup process with 3-step form
-✅ Account opening with multiple account types
-✅ Forgot username/password with identity verification
-✅ Real-time Supabase database integration
-✅ Secure password hashing
-✅ Email verification tokens
-✅ Multi-factor authentication support
-✅ Session management
-✅ Device tracking
-✅ Comprehensive security features
-✅ Privacy and terms documentation
-✅ FAQ support center
-✅ Mobile responsive design
-✅ Real-time notifications
-✅ Transaction history
-✅ Account management dashboard
+### Load Complete Dashboard
+```typescript
+import {
+  getUserAccounts,
+  getUserTotalBalance,
+  getAccountTransactions,
+  getUserNotifications,
+  getUserBillPayments,
+  getUserCreditScore
+} from '@/lib/db'
+
+const loadDashboard = async (userId: string) => {
+  const accounts = await getUserAccounts(userId)
+  
+  const [
+    transactions,
+    notifications,
+    bills,
+    creditScore
+  ] = await Promise.all([
+    accounts[0] ? getAccountTransactions(accounts[0].id, 10) : [],
+    getUserNotifications(userId, 5),
+    getUserBillPayments(userId),
+    getUserCreditScore(userId)
+  ])
+  
+  const totalBalance = await getUserTotalBalance(userId)
+  
+  return {
+    accounts,
+    totalBalance,
+    recentTransactions: transactions,
+    notifications,
+    upcomingBills: bills.filter(b => b.status !== 'completed'),
+    creditScore
+  }
+}
+```
 
 ---
 
-**Start by clicking "Sign up for Chase online" or using the test credentials above!**
+## Error Handling
+
+### Safe Database Calls
+```typescript
+const safeDatabaseCall = async (fn: () => Promise<any>) => {
+  try {
+    return await fn()
+  } catch (error) {
+    console.error('[v0] Database error:', error)
+    throw new Error('An error occurred. Please try again.')
+  }
+}
+
+// Usage
+const user = await safeDatabaseCall(() => getUserById(userId))
+```
+
+---
+
+## API Endpoint Template
+
+### Create API Route
+```typescript
+// app/api/transactions/create/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { createTransaction, updateAccountBalance, getAccountBalance } from '@/lib/db'
+import { getCurrentUser } from '@/lib/auth'
+
+export async function POST(request: NextRequest) {
+  try {
+    // Get authenticated user
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+    
+    // Parse request body
+    const body = await request.json()
+    const { accountId, amount, description, type } = body
+    
+    // Validate input
+    if (!accountId || !amount || !description) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+    
+    // Check balance if debit
+    if (type === 'debit') {
+      const { balance } = await getAccountBalance(accountId)
+      if (balance < amount) {
+        return NextResponse.json(
+          { error: 'Insufficient funds' },
+          { status: 400 }
+        )
+      }
+      
+      // Update balance
+      await updateAccountBalance(accountId, balance - amount)
+    }
+    
+    // Create transaction
+    const transaction = await createTransaction(user.id, accountId, {
+      type,
+      amount,
+      description
+    })
+    
+    return NextResponse.json({
+      success: true,
+      transaction
+    })
+  } catch (error) {
+    console.error('[v0] Transaction error:', error)
+    return NextResponse.json(
+      { error: 'Failed to create transaction' },
+      { status: 500 }
+    )
+  }
+}
+```
+
+---
+
+## Complete Documentation
+
+For comprehensive reference, see these detailed guides:
+
+1. **NEON_DATABASE_GUIDE.md** - Complete database schema and functions
+2. **API_FUNCTIONS_GUIDE.md** - All available API endpoints
+3. **TYPES_AND_SCHEMAS.md** - TypeScript types and validation schemas
+
+---
+
+## Key Database Functions Available
+
+- **Users**: `createUser`, `getUserByEmail`, `getUserById`, `updateUser`
+- **Accounts**: `getUserAccounts`, `getAccountById`, `createAccount`, `getUserTotalBalance`
+- **Transactions**: `getAccountTransactions`, `createTransaction`, `getAccountBalance`, `updateAccountBalance`
+- **Notifications**: `getUserNotifications`, `createNotification`, `markNotificationAsRead`, `getUnreadNotificationCount`
+- **Bills**: `getUserBillPayments`, `createBillPayment`, `updateBillPaymentStatus`
+- **Transfers**: `createWireTransfer`, `getUserWireTransfers`, `createZelleTransfer`, `getUserZelleTransfers`
+- **Credit**: `getUserCreditScore`, `updateCreditScore`
+- **Security**: `createLoginHistory`, `getUserLoginHistory`
+- **Settings**: `getUserSettings`, `updateUserSettings`
+
+All functions are in `/lib/db.ts` and use Neon serverless PostgreSQL via HTTP.

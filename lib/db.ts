@@ -183,14 +183,264 @@ export async function getAccountTransactions(accountId: string, limit = 50) {
   return result
 }
 
-export async function createTransaction(accountId: string, data: {
+export async function createTransaction(userId: string, accountId: string, data: {
   type: string
   amount: number
-  description?: string
+  description: string
+  category?: string
+  recipient_name?: string
+  recipient_account?: string
 }) {
   const result = await sql`
-    INSERT INTO transactions (account_id, type, amount, description)
-    VALUES (${accountId}, ${data.type}, ${data.amount}, ${data.description || null})
+    INSERT INTO transactions (user_id, account_id, type, amount, description, category, recipient_name, recipient_account)
+    VALUES (${userId}, ${accountId}, ${data.type}, ${data.amount}, ${data.description}, ${data.category || 'general'}, ${data.recipient_name || null}, ${data.recipient_account || null})
+    RETURNING *
+  `
+  return result[0]
+}
+
+// Balance operations
+export async function getAccountBalance(accountId: string) {
+  const result = await sql`
+    SELECT balance, available_balance FROM accounts WHERE id = ${accountId}
+  `
+  return result[0] || { balance: 0, available_balance: 0 }
+}
+
+export async function updateAccountBalance(accountId: string, newBalance: number) {
+  const result = await sql`
+    UPDATE accounts
+    SET balance = ${newBalance}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${accountId}
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function getUserTotalBalance(userId: string) {
+  const result = await sql`
+    SELECT COALESCE(SUM(balance), 0) as total_balance
+    FROM accounts
+    WHERE user_id = ${userId}
+  `
+  return result[0]?.total_balance || 0
+}
+
+export async function getUserAccountsByType(userId: string, accountType: string) {
+  const result = await sql`
+    SELECT * FROM accounts
+    WHERE user_id = ${userId} AND account_type = ${accountType}
+    ORDER BY created_at DESC
+  `
+  return result
+}
+
+// Notification operations
+export async function getUserNotifications(userId: string, limit = 20) {
+  const result = await sql`
+    SELECT * FROM notifications
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return result
+}
+
+export async function createNotification(userId: string, data: {
+  title: string
+  message: string
+  type?: string
+  category?: string
+  action_url?: string
+}) {
+  const result = await sql`
+    INSERT INTO notifications (user_id, title, message, type, category, action_url)
+    VALUES (${userId}, ${data.title}, ${data.message}, ${data.type || 'info'}, ${data.category || 'general'}, ${data.action_url || null})
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function markNotificationAsRead(notificationId: string) {
+  const result = await sql`
+    UPDATE notifications
+    SET is_read = true, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${notificationId}
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function getUnreadNotificationCount(userId: string) {
+  const result = await sql`
+    SELECT COUNT(*) as count FROM notifications
+    WHERE user_id = ${userId} AND is_read = false
+  `
+  return result[0]?.count || 0
+}
+
+// Bill payment operations
+export async function getUserBillPayments(userId: string) {
+  const result = await sql`
+    SELECT * FROM bill_payments
+    WHERE user_id = ${userId}
+    ORDER BY due_date ASC
+  `
+  return result
+}
+
+export async function createBillPayment(userId: string, accountId: string, data: {
+  payee: string
+  amount: number
+  due_date: string
+  scheduled_date?: string
+  frequency?: string
+}) {
+  const result = await sql`
+    INSERT INTO bill_payments (user_id, from_account_id, payee, amount, due_date, scheduled_date, frequency)
+    VALUES (${userId}, ${accountId}, ${data.payee}, ${data.amount}, ${data.due_date}, ${data.scheduled_date || null}, ${data.frequency || 'once'})
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function updateBillPaymentStatus(billPaymentId: string, status: string) {
+  const result = await sql`
+    UPDATE bill_payments
+    SET status = ${status}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${billPaymentId}
+    RETURNING *
+  `
+  return result[0]
+}
+
+// Wire transfer operations
+export async function createWireTransfer(userId: string, accountId: string, data: {
+  amount: number
+  recipient_name: string
+  recipient_bank: string
+  recipient_routing_number: string
+  recipient_account_number: string
+}) {
+  const result = await sql`
+    INSERT INTO wire_transfers (user_id, from_account_id, amount, recipient_name, recipient_bank, recipient_routing_number, recipient_account_number)
+    VALUES (${userId}, ${accountId}, ${data.amount}, ${data.recipient_name}, ${data.recipient_bank}, ${data.recipient_routing_number}, ${data.recipient_account_number})
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function getUserWireTransfers(userId: string, limit = 50) {
+  const result = await sql`
+    SELECT * FROM wire_transfers
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return result
+}
+
+// Zelle transfer operations
+export async function createZelleTransfer(userId: string, accountId: string, data: {
+  amount: number
+  recipient_name: string
+  recipient_email?: string
+  recipient_phone?: string
+}) {
+  const result = await sql`
+    INSERT INTO zelle_transfers (user_id, from_account_id, amount, recipient_name, recipient_email, recipient_phone)
+    VALUES (${userId}, ${accountId}, ${data.amount}, ${data.recipient_name}, ${data.recipient_email || null}, ${data.recipient_phone || null})
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function getUserZelleTransfers(userId: string, limit = 50) {
+  const result = await sql`
+    SELECT * FROM zelle_transfers
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return result
+}
+
+// Credit score operations
+export async function getUserCreditScore(userId: string) {
+  const result = await sql`
+    SELECT * FROM credit_scores WHERE user_id = ${userId}
+  `
+  return result[0] || null
+}
+
+export async function updateCreditScore(userId: string, data: {
+  score: number
+  status: string
+  trend: string
+}) {
+  const result = await sql`
+    UPDATE credit_scores
+    SET score = ${data.score}, status = ${data.status}, trend = ${data.trend}, updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = ${userId}
+    RETURNING *
+  `
+  return result[0]
+}
+
+// Login history operations
+export async function createLoginHistory(userId: string, data: {
+  device?: string
+  location?: string
+  ip_address?: string
+  status?: string
+}) {
+  const result = await sql`
+    INSERT INTO login_history (user_id, device, location, ip_address, status)
+    VALUES (${userId}, ${data.device || null}, ${data.location || null}, ${data.ip_address || null}, ${data.status || 'success'})
+    RETURNING *
+  `
+  return result[0]
+}
+
+export async function getUserLoginHistory(userId: string, limit = 20) {
+  const result = await sql`
+    SELECT * FROM login_history
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+  return result
+}
+
+// User settings operations
+export async function getUserSettings(userId: string) {
+  const result = await sql`
+    SELECT * FROM user_settings WHERE user_id = ${userId}
+  `
+  return result[0] || null
+}
+
+export async function updateUserSettings(userId: string, data: {
+  dark_mode?: boolean
+  language?: string
+  currency?: string
+  biometric_login?: boolean
+  two_factor_method?: string
+  session_timeout?: number
+  settings_data?: Record<string, any>
+}) {
+  const result = await sql`
+    UPDATE user_settings
+    SET
+      dark_mode = COALESCE(${data.dark_mode}, dark_mode),
+      language = COALESCE(${data.language}, language),
+      currency = COALESCE(${data.currency}, currency),
+      biometric_login = COALESCE(${data.biometric_login}, biometric_login),
+      two_factor_method = COALESCE(${data.two_factor_method}, two_factor_method),
+      session_timeout = COALESCE(${data.session_timeout}, session_timeout),
+      settings_data = COALESCE(${data.settings_data ? JSON.stringify(data.settings_data) : null}, settings_data),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = ${userId}
     RETURNING *
   `
   return result[0]
