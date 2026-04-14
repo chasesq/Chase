@@ -73,6 +73,11 @@ export type UserProfile = {
   currency: string
   timezone: string
   avatarUrl?: string // Added for avatar
+  accountNumber?: string // Unique account number for user
+  totalBalance?: number // Total across all accounts
+  totalCheckingBalance?: number // Total checking balance
+  totalSavingsBalance?: number // Total savings balance
+  totalSavingsGoals?: number // Total savings goals amount
 }
 
 export type SavingsGoal = {

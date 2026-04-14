@@ -25,7 +25,9 @@ import {
   ArrowDownLeft,
   MoreHorizontal,
   Copy,
-  CheckCircle2
+  CheckCircle2,
+  DollarSign,
+  PiggyBank
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -201,6 +203,88 @@ export default function UserDashboardPage() {
               <span className="text-white">1M</span>
               <span>1Y</span>
               <span>All</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Details Card */}
+        <Card className="border border-white/10 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+          <CardHeader className="pb-3 border-b border-white/10">
+            <CardTitle className="text-white text-base font-semibold flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-blue-400" />
+              Account Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Account Number */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/50 uppercase tracking-wider font-medium">Account Number</p>
+                <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
+                  <Shield className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                  <code className="font-mono text-sm text-white font-medium flex-1">{userProfile.accountNumber || "Not set"}</code>
+                  <button 
+                    onClick={() => {
+                      if (userProfile.accountNumber) {
+                        navigator.clipboard.writeText(userProfile.accountNumber)
+                        setCopiedAccount(userProfile.accountNumber)
+                        setTimeout(() => setCopiedAccount(null), 2000)
+                      }
+                    }}
+                    className="text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
+                  >
+                    {copiedAccount === userProfile.accountNumber ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-400" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Total Balance */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/50 uppercase tracking-wider font-medium">Total Balance</p>
+                <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalBalance)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Checking Balance */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/50 uppercase tracking-wider font-medium">Checking Balance</p>
+                <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
+                  <Wallet className="h-5 w-5 text-blue-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalCheckingBalance)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings Balance */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/50 uppercase tracking-wider font-medium">Savings Balance</p>
+                <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
+                  <PiggyBank className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalSavingsBalance)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings Goals */}
+              <div className="space-y-2">
+                <p className="text-xs text-white/50 uppercase tracking-wider font-medium">Total Savings Goals</p>
+                <div className="flex items-center gap-3 p-3 bg-black/20 border border-white/10 rounded-lg">
+                  <Award className="h-5 w-5 text-amber-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="font-bold text-lg text-white">${formatBalance(userProfile.totalSavingsGoals)}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
