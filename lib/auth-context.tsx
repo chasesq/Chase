@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .select("*")
         .eq("id", userId)
         .single()
@@ -244,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           ...updates,
           updated_at: new Date().toISOString(),

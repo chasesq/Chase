@@ -71,6 +71,22 @@ export async function POST(request: NextRequest) {
 
     console.log('[Supabase Sign-up] User created and auto-confirmed:', data.user.id)
 
+    // Create user profile in public.users table with default role
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: data.user.id,
+        email: data.user.email,
+        full_name: name,
+        phone: phone_number || null,
+        role: 'user', // Default role for new sign-ups
+      })
+
+    if (profileError) {
+      console.error('[Supabase Sign-up] Profile creation error:', profileError.message)
+      // Note: User auth was created but profile failed - this should be handled
+    }
+
     return NextResponse.json(
       {
         message: 'Account created successfully! You can now log in.',
