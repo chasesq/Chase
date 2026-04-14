@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createUser, getUserByEmail } from '@/lib/db'
+import { createUser, getUserByEmail, createAccount } from '@/lib/db'
 import { hashPassword, validatePassword, validateEmail, createUserSession } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
@@ -103,6 +103,24 @@ export async function POST(request: NextRequest) {
 
     console.log('[Neon Sign-up] User created successfully:', newUser.id)
 
+    // Create default checking account with zero balance
+    const defaultAccount = await createAccount(newUser.id, {
+      account_type: 'checking',
+      account_number: newUser.account_number.slice(-4), // Last 4 digits for display
+      balance: 0, // Zero balance for new users
+      currency: currency || 'USD',
+    })
+
+    if (!defaultAccount) {
+      console.warn('[v0] Warning: Failed to create default account for user:', newUser.id)
+    }
+
+    console.log('[Neon Sign-up] Default account created:', {
+      accountId: defaultAccount?.id,
+      accountNumber: newUser.account_number,
+      balance: 0,
+    })
+
     // Create session for auto-login
     try {
       await createUserSession(newUser.id)
@@ -111,12 +129,17 @@ export async function POST(request: NextRequest) {
       // Continue even if session creation fails - user was created successfully
     }
 
-    // Return user data
+    // Return user data with account number and zero balances
     const userProfile = {
       id: newUser.id,
       email: newUser.email,
       full_name: newUser.full_name,
       phone: userPhone,
+      accountNumber: newUser.account_number,
+      totalBalance: newUser.total_balance,
+      totalCheckingBalance: newUser.total_checking_balance,
+      totalSavingsBalance: newUser.total_savings_balance,
+      totalSavingsGoals: newUser.total_savings_goals,
     }
 
     return NextResponse.json(

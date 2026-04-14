@@ -19,6 +19,15 @@ export async function getUserById(id: string) {
   return result[0] || null
 }
 
+/**
+ * Generate unique account number for new user
+ */
+function generateAccountNumber(): string {
+  const prefix = '9'
+  const random = Math.floor(Math.random() * 9000000000) + 1000000000
+  return prefix + random.toString().slice(1)
+}
+
 export async function createUser(data: {
   email: string
   password_hash: string
@@ -31,6 +40,8 @@ export async function createUser(data: {
   currency_preference?: string
   language_preference?: string
 }) {
+  const accountNumber = generateAccountNumber()
+  
   const result = await sql`
     INSERT INTO users (
       email,
@@ -42,7 +53,12 @@ export async function createUser(data: {
       government_id_type,
       account_type_preference,
       currency_preference,
-      language_preference
+      language_preference,
+      account_number,
+      total_balance,
+      total_checking_balance,
+      total_savings_balance,
+      total_savings_goals
     ) VALUES (
       ${data.email},
       ${data.password_hash},
@@ -53,9 +69,14 @@ export async function createUser(data: {
       ${data.government_id_type || null},
       ${data.account_type_preference || null},
       ${data.currency_preference || 'USD'},
-      ${data.language_preference || 'en'}
+      ${data.language_preference || 'en'},
+      ${accountNumber},
+      0.00,
+      0.00,
+      0.00,
+      0.00
     )
-    RETURNING id, email, full_name, phone, created_at
+    RETURNING id, email, full_name, phone, account_number, total_balance, total_checking_balance, total_savings_balance, created_at
   `
   return result[0]
 }
