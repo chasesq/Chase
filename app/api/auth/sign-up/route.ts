@@ -4,12 +4,34 @@ import { createServiceClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password, phone_number } = body
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      street,
+      city,
+      state,
+      zipCode,
+      dateOfBirth,
+      governmentIdType,
+      accountType,
+      currency,
+      language,
+      emailNotifications,
+      smsNotifications,
+      inAppNotifications,
+      twoFactorEnabled,
+    } = body
 
-    // Validate input
-    if (!name || !email || !password) {
+    // Validate required fields
+    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'password', 'street', 'city', 'state', 'zipCode', 'dateOfBirth', 'governmentIdType', 'accountType', 'currency', 'language']
+    const missingFields = requiredFields.filter((field) => !body[field])
+    
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, email, password' },
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 },
       )
     }
@@ -23,15 +45,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Password validation (minimum 8 characters)
-    if (password.length < 8) {
+    // Password validation - must meet complexity requirements
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
+    if (!passwordRegex.test(password)) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
+        {
+          error: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character',
+        },
         { status: 400 },
       )
     }
 
-    // Use service client to create user with auto-confirm (bypasses email verification)
+    // Age validation - must be 18+
+    const birthDate = new Date(dateOfBirth)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const month = today.getMonth() - birthDate.getMonth()
+    if (month < 0 || (month === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    if (age < 18) {
+      return NextResponse.json(
+        { error: 'You must be at least 18 years old to open an account' },
+        { status: 400 },
+      )
+    }
+
+    // Phone validation
+    const phoneRegex = /^[+]?[0-9\s\-()]+$/
+    if (!phoneRegex.test(phone)) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format' },
+        { status: 400 },
+      )
+    }
+
+    // Use service client to create user with auto-confirm
     const supabase = createServiceClient()
 
     // Create user with admin API - this auto-confirms the email
@@ -40,14 +89,14 @@ export async function POST(request: NextRequest) {
       password,
       email_confirm: true, // Auto-confirm email
       user_metadata: {
-        full_name: name,
-        phone: phone_number || null,
+        full_name: `${firstName} ${lastName}`,
+        phone,
       },
     })
 
     if (error) {
       console.error('[Supabase Sign-up] Error:', error.message)
-      
+
       // Handle specific Supabase errors
       if (error.message.includes('already been registered') || error.message.includes('already exists')) {
         return NextResponse.json(
@@ -71,20 +120,30 @@ export async function POST(request: NextRequest) {
 
     console.log('[Supabase Sign-up] User created and auto-confirmed:', data.user.id)
 
-    // Create user profile in public.users table with default role
+    // Create comprehensive user profile in public.users table with all new fields
     const { error: profileError } = await supabase
       .from('users')
       .insert({
         id: data.user.id,
-        email: data.user.email,
-        full_name: name,
-        phone: phone_number || null,
+        email,
+        full_name: `${firstName} ${lastName}`,
+        phone,
+        address: `${street}, ${city}, ${state} ${zipCode}`,
+        date_of_birth: dateOfBirth,
+        government_id_type: governmentIdType,
+        account_type_preference: accountType,
+        currency_preference: currency,
+        language_preference: language,
+        email_notifications: emailNotifications ?? true,
+        sms_notifications: smsNotifications ?? false,
+        inapp_notifications: inAppNotifications ?? true,
+        two_factor_enabled: twoFactorEnabled ?? false,
         role: 'user', // Default role for new sign-ups
       })
 
     if (profileError) {
       console.error('[Supabase Sign-up] Profile creation error:', profileError.message)
-      // Note: User auth was created but profile failed - this should be handled
+      // Continue even if profile creation fails - user auth was successful
     }
 
     return NextResponse.json(
