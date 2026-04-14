@@ -24,10 +24,35 @@ export default function PoolingPage() {
       <div className="space-y-8">
         {/* Introduction */}
         <section>
-          <h2 className="text-2xl font-bold text-foreground mb-4">Understanding Connection Pooling</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-4">What is Connection Pooling?</h2>
           <p className="text-muted-foreground mb-4">
-            Connection pooling manages a pool of reusable database connections. When your application needs a connection, it reuses one from the pool rather than creating a new connection, which is much faster and uses fewer resources.
+            Every time your application connects to PostgreSQL, it creates a new connection. Creating connections is expensive (network latency, authentication, memory). Connection pooling maintains a pool of idle connections ready to reuse, dramatically improving performance.
           </p>
+
+          <div className="bg-muted p-6 rounded-lg mb-4">
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-foreground mb-2">Without Pooling:</h4>
+                <div className="text-sm text-foreground space-y-1">
+                  <div>Query 1: Create Connection (100ms) → Execute → Close</div>
+                  <div>Query 2: Create Connection (100ms) → Execute → Close</div>
+                  <div>Query 3: Create Connection (100ms) → Execute → Close</div>
+                  <div className="font-bold text-amber-600">Total: 300ms+ for 3 queries</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-foreground mb-2">With Pooling:</h4>
+                <div className="text-sm text-foreground space-y-1">
+                  <div>Setup: Create Pool with 10 connections (200ms)</div>
+                  <div>Query 1: Reuse Connection → Execute → Return to pool (5ms)</div>
+                  <div>Query 2: Reuse Connection → Execute → Return to pool (5ms)</div>
+                  <div>Query 3: Reuse Connection → Execute → Return to pool (5ms)</div>
+                  <div className="font-bold text-green-600">Total: 215ms for 3 queries (30% faster)</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Pooled vs Direct */}
@@ -209,6 +234,172 @@ export default function PoolingPage() {
               </p>
             </Card>
           </div>
+        </section>
+
+        {/* Client-Side Pooling */}
+        <section>
+          <h3 className="text-xl font-bold text-foreground mb-4">Client-Side Connection Pooling</h3>
+          <p className="text-muted-foreground mb-4">
+            For server-side applications (Node.js, Python, etc.), implement connection pooling in your application code.
+          </p>
+
+          <h4 className="font-semibold text-foreground mb-3">Node.js / TypeScript</h4>
+
+          <CodeExampleBlock
+            title="pg Library with Pooling"
+            description="Built-in connection pooling"
+            code={`import { Pool } from 'pg';
+
+// Create a pool (default 10 connections)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum connections
+  min: 2,  // Minimum connections
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+// Use pool for queries
+async function getUser(id) {
+  const result = await pool.query(
+    'SELECT * FROM users WHERE id = $1',
+    [id]
+  );
+  return result.rows[0];
+}
+
+// Close pool on shutdown
+process.on('SIGINT', () => {
+  pool.end(() => {
+    process.exit(0);
+  });
+});`}
+          />
+
+          <CodeExampleBlock
+            title="Prisma with Connection Pooling"
+            description="Prisma ORM with pooling configuration"
+            code={`// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Add pooling directive
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+// In production, use pooled URL for standard queries
+// DATABASE_URL="postgresql://....-pooler.us-east-2.aws.neon.tech/neondb"
+// For migrations, use direct URL (one connection needed)
+// DIRECT_DATABASE_URL="postgresql://....us-east-2.aws.neon.tech/neondb"`}
+          />
+
+          <CodeExampleBlock
+            title="Drizzle with Connection Pooling"
+            description="Drizzle ORM pooling setup"
+            code={`import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+});
+
+const db = drizzle(pool);
+
+// Use db for queries
+const users = await db.select().from(usersTable);`}
+          />
+
+          <h4 className="font-semibold text-foreground mb-3 mt-6">Python</h4>
+
+          <CodeExampleBlock
+            title="asyncpg Connection Pool"
+            description="Python async connection pooling"
+            code={`import asyncpg
+import os
+
+# Create connection pool
+pool = await asyncpg.create_pool(
+    os.environ['DATABASE_URL'],
+    min_size=10,
+    max_size=20,
+    timeout=10,
+)
+
+# Use pool for queries
+async def get_user(user_id):
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            'SELECT * FROM users WHERE id = $1',
+            user_id
+        )
+        return row
+
+# Close pool on shutdown
+await pool.close()`}
+          />
+
+          <CodeExampleBlock
+            title="SQLAlchemy Connection Pool"
+            description="SQLAlchemy with connection pooling"
+            code={`from sqlalchemy import create_engine, pool
+
+# Create engine with pooling
+engine = create_engine(
+    os.environ['DATABASE_URL'],
+    poolclass=pool.QueuePool,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+)
+
+# Use engine for queries
+with engine.connect() as conn:
+    result = conn.execute(text('SELECT * FROM users'))`}
+          />
+        </section>
+
+        {/* Pool Modes */}
+        <section>
+          <h3 className="text-xl font-bold text-foreground mb-4">PgBouncer Pool Modes</h3>
+          <p className="text-muted-foreground mb-4">
+            Neon uses PgBouncer which supports different pooling modes. Understanding them helps optimize for your use case.
+          </p>
+
+          <Card className="p-4 border-blue-200 bg-blue-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">Session Mode (Default)</h4>
+            <p className="text-sm text-foreground mb-2">
+              One server connection per client session. Server connection is held for the entire session.
+            </p>
+            <div className="text-sm text-foreground space-y-1">
+              <p><strong>Best for:</strong> Traditional web apps, JDBC connections, persistent connections</p>
+              <p><strong>Overhead:</strong> Lower (reuses same connection)</p>
+            </div>
+          </Card>
+
+          <Card className="p-4 border-green-200 bg-green-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">Transaction Mode</h4>
+            <p className="text-sm text-foreground mb-2">
+              Server connection released after each transaction completes. Better connection reuse.
+            </p>
+            <div className="text-sm text-foreground space-y-1">
+              <p><strong>Best for:</strong> Serverless functions, microservices, high connection churn</p>
+              <p><strong>Overhead:</strong> Higher (connection negotiation per transaction)</p>
+            </div>
+          </Card>
+
+          <Card className="p-4 border-purple-200 bg-purple-50">
+            <h4 className="font-semibold text-foreground mb-2">Statement Mode</h4>
+            <p className="text-sm text-foreground mb-2">
+              Connection released after each statement. Maximum connection reuse but most overhead.
+            </p>
+            <div className="text-sm text-foreground space-y-1">
+              <p><strong>Best for:</strong> Very high concurrency with short queries</p>
+              <p><strong>Overhead:</strong> Highest (per-statement overhead)</p>
+              <p className="text-red-700"><strong>Warning:</strong> Breaks some PostgreSQL features (prepared statements, temp tables)</p>
+            </div>
+          </Card>
         </section>
 
         {/* Common Pitfalls */}

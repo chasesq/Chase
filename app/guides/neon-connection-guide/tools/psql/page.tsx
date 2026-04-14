@@ -2,21 +2,21 @@ import { GuideLayout } from '@/components/guides/guide-layout'
 import { GuideNavigation } from '@/components/guides/guide-navigation'
 import { CodeExampleBlock } from '@/components/guides/code-example-block'
 import { Card } from '@/components/ui/card'
-import { Terminal, Database, Settings } from 'lucide-react'
+import { Terminal } from 'lucide-react'
 
 export const metadata = {
   title: 'psql Guide | Neon Guides',
-  description: 'Learn how to use the PostgreSQL command-line tool to connect to Neon.',
+  description: 'Learn how to use psql to connect to and query your Neon database from the command line.',
 }
 
 export default function PsqlPage() {
   return (
     <GuideLayout
-      title="PostgreSQL Command-Line Tool (psql)"
-      description="Learn how to use the PostgreSQL command-line tool to connect to Neon and manage your database."
+      title="Using psql with Neon"
+      description="Master the psql command-line tool for interacting with your Neon PostgreSQL database."
       breadcrumbs={[
         { label: 'Neon Connection Guide', href: '/guides/neon-connection-guide' },
-        { label: 'Tools', href: '/guides/neon-connection-guide/tools/pooling' },
+        { label: 'Tools', href: '/guides/neon-connection-guide/tools/overview' },
         { label: 'psql' },
       ]}
       sidebar={<GuideNavigation />}
@@ -26,66 +26,32 @@ export default function PsqlPage() {
         <section>
           <h2 className="text-2xl font-bold text-foreground mb-4">What is psql?</h2>
           <p className="text-muted-foreground mb-4">
-            psql is the interactive terminal for PostgreSQL. It allows you to connect directly to your Neon database, execute SQL commands, and manage your database schema from the command line.
+            psql is the official PostgreSQL command-line client. It allows you to connect to and interact with PostgreSQL databases directly from your terminal. It&apos;s perfect for running queries, managing databases, and automating tasks.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-4">
-              <div className="flex items-start gap-3">
-                <Terminal className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm mb-1">Interactive CLI</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Execute SQL and PostgreSQL commands interactively
-                  </p>
-                </div>
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-start gap-3">
-                <Database className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm mb-1">Schema Management</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Create tables, indexes, and manage your schema
-                  </p>
-                </div>
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-start gap-3">
-                <Settings className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-foreground text-sm mb-1">Diagnostics</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Debug issues and inspect database state
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
+          <p className="text-muted-foreground">
+            psql comes with PostgreSQL, so if you have PostgreSQL installed, you already have psql.
+          </p>
         </section>
 
         {/* Installation */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Installation</h3>
-          <p className="text-muted-foreground mb-4">
-            psql comes with PostgreSQL. Install PostgreSQL for your operating system.
-          </p>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Installation</h2>
 
+          <h3 className="text-lg font-bold text-foreground mb-4">macOS</h3>
           <CodeExampleBlock
-            title="macOS"
-            description="Install with Homebrew"
-            code={`# Using Homebrew
-brew install postgresql
+            title="Install PostgreSQL with Homebrew"
+            code={`# Install PostgreSQL (includes psql)
+brew install postgresql@15
 
-# Verify installation
-psql --version`}
+# Or just install psql client (lighter weight)
+brew install libpq
+echo 'export PATH="/usr/local/opt/libpq/bin:$PATH"' >> ~/.zprofile`}
           />
 
+          <h3 className="text-lg font-bold text-foreground mb-4">Linux (Ubuntu/Debian)</h3>
           <CodeExampleBlock
-            title="Linux (Ubuntu/Debian)"
-            description="Install with apt"
-            code={`# Update package list
+            title="Install PostgreSQL Client"
+            code={`# Update package manager
 sudo apt update
 
 # Install PostgreSQL client
@@ -95,307 +61,442 @@ sudo apt install postgresql-client
 psql --version`}
           />
 
+          <h3 className="text-lg font-bold text-foreground mb-4">Windows</h3>
           <CodeExampleBlock
-            title="Windows"
-            description="Using PostgreSQL installer"
-            code={`# Download and run installer from:
-# https://www.postgresql.org/download/windows/
+            title="Install PostgreSQL"
+            code={`# Download from https://www.postgresql.org/download/windows/
+# Run the installer and select to install psql
 
-# Or use Chocolatey:
+# Or use Chocolatey
 choco install postgresql
 
-# Verify installation
-psql --version`}
+# Or use Windows Subsystem for Linux (WSL)
+# See Linux instructions above`}
+          />
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Verify Installation</h3>
+          <CodeExampleBlock
+            title="Check psql Version"
+            code={`psql --version
+# Output: psql (PostgreSQL) 15.2`}
           />
         </section>
 
-        {/* Basic Connection */}
+        {/* Connecting */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Connecting to Neon</h3>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Connecting to Neon</h2>
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Get Your Connection String</h3>
           <p className="text-muted-foreground mb-4">
-            Connect to your Neon database using the connection string from your Neon dashboard.
+            In the Neon Console, click on your database and copy the connection string.
           </p>
 
+          <h3 className="text-lg font-bold text-foreground mb-4">Basic Connection</h3>
           <CodeExampleBlock
-            title="Basic Connection"
-            description="Using connection string directly"
-            code={`# Connect using full connection string
-psql postgresql://user:password@ep-cool-rain-123456.us-east-2.aws.neon.tech:5432/neondb
+            title="Connect to Neon Database"
+            code={`psql 'postgresql://user:password@ep-cool-rain.us-east-2.aws.neon.tech/neondb'
 
-# Connect with pooled connection (recommended)
-psql postgresql://user:password@ep-cool-rain-123456-pooler.us-east-2.aws.neon.tech:5432/neondb`}
-          />
-
-          <CodeExampleBlock
-            title="Using Environment Variable"
-            description="Set DATABASE_URL variable"
-            code={`# Set environment variable
-export DATABASE_URL="postgresql://user:password@ep-cool-rain-123456-pooler.us-east-2.aws.neon.tech:5432/neondb"
-
-# Connect using the variable
+# Or with environment variable
+export DATABASE_URL='postgresql://user:password@ep-cool-rain.us-east-2.aws.neon.tech/neondb'
 psql $DATABASE_URL`}
           />
 
-          <Card className="p-4 border-amber-200 bg-amber-50 mt-4">
-            <p className="text-sm text-foreground">
-              <strong>Note:</strong> For interactive use and simple queries, you can use either pooled or direct connections. For schema migrations, use the direct connection (without -pooler).
-            </p>
+          <h3 className="text-lg font-bold text-foreground mb-4">Using a .pgpass File</h3>
+          <p className="text-muted-foreground mb-4">
+            Store your connection credentials securely in a <code className="bg-muted px-2 py-1 rounded text-sm">~/.pgpass</code> file so you don&apos;t need to include the password in commands.
+          </p>
+          <CodeExampleBlock
+            title="Create ~/.pgpass"
+            description="One entry per line: hostname:port:database:user:password"
+            code={`# ~/.pgpass
+ep-cool-rain.us-east-2.aws.neon.tech:5432:neondb:user:password
+
+# Set permissions (required)
+chmod 600 ~/.pgpass
+
+# Now connect without password
+psql -h ep-cool-rain.us-east-2.aws.neon.tech -U user -d neondb`}
+          />
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Break Down Connection String</h3>
+          <Card className="p-4 border-blue-200 bg-blue-50">
+            <code className="text-sm font-mono text-foreground block mb-3">
+              postgresql://user:password@host:port/database
+            </code>
+            <div className="space-y-2 text-sm text-foreground">
+              <div><strong>user:</strong> Your database user (default: neondb_owner)</div>
+              <div><strong>password:</strong> Your password</div>
+              <div><strong>host:</strong> Neon endpoint (e.g., ep-cool-rain.us-east-2.aws.neon.tech)</div>
+              <div><strong>port:</strong> PostgreSQL port (default: 5432)</div>
+              <div><strong>database:</strong> Database name (default: neondb)</div>
+            </div>
           </Card>
         </section>
 
-        {/* Common Commands */}
+        {/* Basic Commands */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Essential psql Commands</h3>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Basic psql Commands</h2>
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Running Queries</h3>
+          <CodeExampleBlock
+            title="Execute SQL"
+            code={`# Once connected, type SQL queries
+psql> SELECT * FROM users;
+
+# Run query and disconnect
+psql $DATABASE_URL -c "SELECT * FROM users;"
+
+# Run from file
+psql $DATABASE_URL -f queries.sql`}
+          />
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Meta-Commands (Backslash Commands)</h3>
           <p className="text-muted-foreground mb-4">
-            Key commands for working with your database.
+            Meta-commands start with a backslash (<code className="bg-muted px-1 rounded text-xs">\</code>) and control psql behavior.
           </p>
 
-          <div className="space-y-4">
+          <div className="space-y-3 mb-6">
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\dt</div>
-              <p className="text-sm text-muted-foreground">
-                List all tables in the current database
-              </p>
+              <code className="text-sm font-mono text-foreground">\l</code>
+              <p className="text-sm text-muted-foreground mt-1">List all databases</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\d tablename</div>
-              <p className="text-sm text-muted-foreground">
-                Describe a specific table (show columns, types, constraints)
-              </p>
+              <code className="text-sm font-mono text-foreground">\dt</code>
+              <p className="text-sm text-muted-foreground mt-1">List tables in current database</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\dn</div>
-              <p className="text-sm text-muted-foreground">
-                List all schemas
-              </p>
+              <code className="text-sm font-mono text-foreground">\d tablename</code>
+              <p className="text-sm text-muted-foreground mt-1">Describe a table (show columns and types)</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\du</div>
-              <p className="text-sm text-muted-foreground">
-                List all users/roles
-              </p>
+              <code className="text-sm font-mono text-foreground">\du</code>
+              <p className="text-sm text-muted-foreground mt-1">List database users/roles</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\l</div>
-              <p className="text-sm text-muted-foreground">
-                List all databases
-              </p>
+              <code className="text-sm font-mono text-foreground">\dn</code>
+              <p className="text-sm text-muted-foreground mt-1">List schemas</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\h command</div>
-              <p className="text-sm text-muted-foreground">
-                Get help on a SQL command (e.g., \\h SELECT)
-              </p>
+              <code className="text-sm font-mono text-foreground">\df</code>
+              <p className="text-sm text-muted-foreground mt-1">List functions</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\c database</div>
-              <p className="text-sm text-muted-foreground">
-                Connect to a different database
-              </p>
+              <code className="text-sm font-mono text-foreground">\i filename</code>
+              <p className="text-sm text-muted-foreground mt-1">Execute SQL from file</p>
             </Card>
+
             <Card className="p-4">
-              <div className="font-mono text-sm text-foreground mb-2">\\q</div>
-              <p className="text-sm text-muted-foreground">
-                Quit psql
-              </p>
+              <code className="text-sm font-mono text-foreground">\e</code>
+              <p className="text-sm text-muted-foreground mt-1">Edit query in text editor</p>
+            </Card>
+
+            <Card className="p-4">
+              <code className="text-sm font-mono text-foreground">\h commandname</code>
+              <p className="text-sm text-muted-foreground mt-1">Get help on SQL command</p>
+            </Card>
+
+            <Card className="p-4">
+              <code className="text-sm font-mono text-foreground">\x</code>
+              <p className="text-sm text-muted-foreground mt-1">Toggle expanded display (for wide tables)</p>
+            </Card>
+
+            <Card className="p-4">
+              <code className="text-sm font-mono text-foreground">\q</code>
+              <p className="text-sm text-muted-foreground mt-1">Quit psql</p>
             </Card>
           </div>
-        </section>
 
-        {/* SQL Examples */}
-        <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">SQL Examples</h3>
-          <p className="text-muted-foreground mb-4">
-            Common SQL operations in psql.
-          </p>
-
-          <h4 className="font-semibold text-foreground mb-3">Creating a Table</h4>
           <CodeExampleBlock
-            title="CREATE TABLE"
-            code={`CREATE TABLE users (
-  id BIGSERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  name VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);`}
-          />
+            title="Example Meta-Commands Session"
+            code={`$ psql $DATABASE_URL
+neondb=> \\dt
+                List of relations
+ Schema |     Name      | Type  | Owner
+--------+---------------+-------+-------
+ public | users         | table | neondb_owner
+ public | posts         | table | neondb_owner
+ public | comments      | table | neondb_owner
 
-          <h4 className="font-semibold text-foreground mb-3 mt-6">Inserting Data</h4>
-          <CodeExampleBlock
-            title="INSERT"
-            code={`INSERT INTO users (email, name) VALUES 
-('alice@example.com', 'Alice'),
-('bob@example.com', 'Bob');
+neondb=> \\d users
+            Table "public.users"
+  Column   |  Type   | Collation | Nullable | Default
+-----------+---------+-----------+----------+---------
+ id        | integer |           | not null |
+ name      | text    |           |          |
+ email     | text    |           |          |
+ created_at| timestamp|          |          |
 
--- Verify insertion
-SELECT * FROM users;`}
-          />
-
-          <h4 className="font-semibold text-foreground mb-3 mt-6">Creating an Index</h4>
-          <CodeExampleBlock
-            title="CREATE INDEX"
-            code={`-- Create index on email for faster lookups
-CREATE INDEX idx_users_email ON users(email);
-
--- Create index concurrently (non-blocking for production)
-CREATE INDEX CONCURRENTLY idx_users_created_at ON users(created_at);`}
-          />
-
-          <h4 className="font-semibold text-foreground mb-3 mt-6">Modifying Schema</h4>
-          <CodeExampleBlock
-            title="ALTER TABLE"
-            code={`-- Add a new column
-ALTER TABLE users ADD COLUMN phone VARCHAR(20);
-
--- Drop a column
-ALTER TABLE users DROP COLUMN phone;
-
--- Rename a column
-ALTER TABLE users RENAME COLUMN name TO full_name;`}
+neondb=> \\q`}
           />
         </section>
 
-        {/* Scripting */}
+        {/* Advanced Usage */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Running SQL Scripts</h3>
-          <p className="text-muted-foreground mb-4">
-            Execute SQL files from psql.
-          </p>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Advanced psql Usage</h2>
 
+          <h3 className="text-lg font-bold text-foreground mb-4">Running Scripts</h3>
           <CodeExampleBlock
             title="Execute SQL File"
-            code={`# Run SQL from a file
-psql postgresql://user:pass@host/db -f script.sql
+            code={`# Method 1: While connected
+psql> \\i schema.sql
 
-# Run SQL and exit
-psql postgresql://user:pass@host/db < script.sql
+# Method 2: As command argument
+psql $DATABASE_URL -f migrations/001_initial_schema.sql
 
-# Run with verbose output
-psql -v ON_ERROR_STOP=1 postgresql://user:pass@host/db -f script.sql`}
+# Method 3: Using bash pipeline
+cat schema.sql | psql $DATABASE_URL`}
           />
 
-          <h4 className="font-semibold text-foreground mb-3 mt-6">Example SQL Script</h4>
+          <h3 className="text-lg font-bold text-foreground mb-4">Output Formatting</h3>
           <CodeExampleBlock
-            title="schema.sql"
-            code={`-- Create tables
-CREATE TABLE users (
-  id BIGSERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+            title="Different Output Formats"
+            code={`# Default (aligned)
+psql -c "SELECT * FROM users"
 
--- Create indexes
-CREATE INDEX idx_users_email ON users(email);
+# CSV format (useful for importing)
+psql -c "SELECT * FROM users" --csv
 
--- Insert sample data
-INSERT INTO users (email) VALUES ('test@example.com');
+# Tab-separated (TSV)
+psql -c "SELECT * FROM users" -F $'\\t'
 
--- Verify
-SELECT COUNT(*) FROM users;`}
+# HTML format
+psql -c "SELECT * FROM users" --html
+
+# JSON format
+psql -c "SELECT * FROM users" --json`}
+          />
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Variables and Loops</h3>
+          <CodeExampleBlock
+            title="Using Variables in psql"
+            code={`# Set a variable
+psql> \\set userid 123
+
+# Use the variable
+psql> SELECT * FROM users WHERE id = :userid;
+
+# Loop over values
+psql> \\set id 1
+psql> SELECT * FROM users WHERE id = :id;
+psql> \\set id 2
+psql> SELECT * FROM users WHERE id = :id;`}
+          />
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Timing Queries</h3>
+          <CodeExampleBlock
+            title="Measure Query Performance"
+            code={`# Enable timing
+psql> \\timing on
+
+# Run query (timing is displayed)
+psql> SELECT COUNT(*) FROM users;
+ count
+-------
+  1000
+(1 row)
+
+Time: 45.123 ms
+
+# Disable timing
+psql> \\timing off`}
+          />
+
+          <h3 className="text-lg font-bold text-foreground mb-4">Batch Operations</h3>
+          <CodeExampleBlock
+            title="Run Multiple Queries from Bash"
+            code={`# Run multiple queries sequentially
+psql $DATABASE_URL << EOF
+\\dt
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM posts;
+EOF
+
+# Or with error handling
+psql $DATABASE_URL -v ON_ERROR_STOP=1 << EOF
+BEGIN;
+INSERT INTO users (name, email) VALUES ('John', 'john@example.com');
+INSERT INTO users (name, email) VALUES ('Jane', 'jane@example.com');
+COMMIT;
+EOF`}
           />
         </section>
 
-        {/* Backup and Export */}
+        {/* Common Tasks */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Backup and Export</h3>
-          <p className="text-muted-foreground mb-4">
-            Export data and schema from your Neon database.
-          </p>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Common Tasks with psql</h2>
 
-          <CodeExampleBlock
-            title="Dump Database Schema"
-            description="Export schema without data"
-            code={`pg_dump postgresql://user:pass@host/db \\
-  --schema-only \\
-  > schema.sql`}
-          />
+          <Card className="p-6 mb-4">
+            <h3 className="text-lg font-bold text-foreground mb-4">Backup Your Database</h3>
+            <CodeExampleBlock
+              title="Create a Database Dump"
+              code={`# Backup all data and schema
+pg_dump $DATABASE_URL > backup.sql
 
-          <CodeExampleBlock
-            title="Dump Database with Data"
-            description="Export complete database"
-            code={`pg_dump postgresql://user:pass@host/db \\
-  > backup.sql`}
-          />
+# Backup schema only (no data)
+pg_dump --schema-only $DATABASE_URL > schema.sql
 
-          <CodeExampleBlock
-            title="Dump Specific Table"
-            description="Export just one table"
-            code={`pg_dump postgresql://user:pass@host/db \\
-  --table=users \\
-  > users.sql`}
-          />
+# Backup with custom format (more efficient)
+pg_dump --format=custom $DATABASE_URL > backup.dump`}
+            />
+          </Card>
 
-          <CodeExampleBlock
-            title="Dump as CSV"
-            description="Export data as CSV for spreadsheets"
-            code={`# Using psql
-psql postgresql://user:pass@host/db \\
-  --command \"COPY users TO STDOUT WITH CSV HEADER\" \\
-  > users.csv`}
-          />
+          <Card className="p-6 mb-4">
+            <h3 className="text-lg font-bold text-foreground mb-4">Restore from Backup</h3>
+            <CodeExampleBlock
+              title="Restore Database from Dump"
+              code={`# Restore from SQL backup
+psql $DATABASE_URL < backup.sql
+
+# Restore from custom format backup
+pg_restore --dbname=$DATABASE_URL backup.dump
+
+# Restore to a different database
+psql postgresql://user:password@host/other_db < backup.sql`}
+            />
+          </Card>
+
+          <Card className="p-6 mb-4">
+            <h3 className="text-lg font-bold text-foreground mb-4">Monitor Database Activity</h3>
+            <CodeExampleBlock
+              title="View Active Connections and Queries"
+              code={`# Connect and run monitoring query
+psql $DATABASE_URL -c "
+  SELECT pid, usename, application_name, state, query
+  FROM pg_stat_activity
+  WHERE datname = 'neondb'
+  ORDER BY query_start DESC;
+"`}
+            />
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-bold text-foreground mb-4">Run Migrations</h3>
+            <CodeExampleBlock
+              title="Apply Schema Changes"
+              code={`# Run migration file
+psql $DATABASE_URL -f migrations/001_add_users_table.sql
+psql $DATABASE_URL -f migrations/002_add_posts_table.sql
+psql $DATABASE_URL -f migrations/003_add_indexes.sql
+
+# Or run all at once
+for migration in migrations/*.sql; do
+  echo "Running $migration..."
+  psql $DATABASE_URL -f "$migration"
+done`}
+            />
+          </Card>
+        </section>
+
+        {/* Tips and Tricks */}
+        <section>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Tips and Tricks</h2>
+          <div className="space-y-4">
+            <Card className="p-4 border-blue-200 bg-blue-50">
+              <h4 className="font-semibold text-foreground mb-2">Use Aliases for Common Connections</h4>
+              <CodeExampleBlock
+                title="Add to ~/.bashrc or ~/.zshrc"
+                code={`alias psql-neon="psql \\
+  postgresql://user:password@ep-cool-rain.us-east-2.aws.neon.tech/neondb"
+
+# Now you can just type
+psql-neon`}
+              />
+            </Card>
+
+            <Card className="p-4 border-green-200 bg-green-50">
+              <h4 className="font-semibold text-foreground mb-2">Set PAGER for Long Output</h4>
+              <p className="text-sm text-foreground mb-2">
+                Control how psql displays results that span multiple screens.
+              </p>
+              <CodeExampleBlock
+                code={`# Use 'less' for pagination
+psql> \\pset pager on
+
+# Disable paging (output all at once)
+psql> \\pset pager off`}
+              />
+            </Card>
+
+            <Card className="p-4 border-purple-200 bg-purple-50">
+              <h4 className="font-semibold text-foreground mb-2">View Query History</h4>
+              <CodeExampleBlock
+                code={`# psql uses bash history
+# Press up arrow to see previous queries
+# Or search history with Ctrl+R`}
+              />
+            </Card>
+
+            <Card className="p-4 border-amber-200 bg-amber-50">
+              <h4 className="font-semibold text-foreground mb-2">Suppress Output</h4>
+              <CodeExampleBlock
+                code={`# Run query silently (useful in scripts)
+psql $DATABASE_URL -q -c "INSERT INTO users VALUES (...)"`}
+              />
+            </Card>
+          </div>
         </section>
 
         {/* Troubleshooting */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Troubleshooting</h3>
-          <div className="space-y-4">
-            <Card className="p-4 border-red-200 bg-red-50">
-              <h4 className="font-semibold text-foreground text-sm mb-2">\"could not connect to server\"</h4>
-              <p className="text-sm text-muted-foreground">
-                Check your connection string and credentials. Verify the hostname is correct and your IP address is allowed.
-              </p>
-            </Card>
-            <Card className="p-4 border-amber-200 bg-amber-50">
-              <h4 className="font-semibold text-foreground text-sm mb-2">\"role does not exist\"</h4>
-              <p className="text-sm text-muted-foreground">
-                Verify you&apos;re using the correct username from your connection string.
-              </p>
-            </Card>
-            <Card className="p-4 border-yellow-200 bg-yellow-50">
-              <h4 className="font-semibold text-foreground text-sm mb-2">\"SSL error\"</h4>
-              <p className="text-sm text-muted-foreground">
-                Neon requires SSL. Make sure your connection string includes <code className="bg-white px-2 py-1 rounded text-xs">?sslmode=require</code>.
-              </p>
-            </Card>
-            <Card className="p-4 border-blue-200 bg-blue-50">
-              <h4 className="font-semibold text-foreground text-sm mb-2">\"too many connections\"</h4>
-              <p className="text-sm text-muted-foreground">
-                Use the pooled connection string (-pooler) or upgrade your compute tier.
-              </p>
-            </Card>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Troubleshooting</h2>
+
+          <Card className="p-4 border-amber-200 bg-amber-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">Connection Refused</h4>
+            <p className="text-sm text-foreground mb-2">
+              <strong>Error:</strong> "psql: could not translate host name to address"
+            </p>
+            <p className="text-sm text-foreground">
+              <strong>Solution:</strong> Check your hostname is correct and you have internet connectivity.
+            </p>
+          </Card>
+
+          <Card className="p-4 border-amber-200 bg-amber-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">Password Authentication Failed</h4>
+            <p className="text-sm text-foreground mb-2">
+              <strong>Error:</strong> "password authentication failed for user"
+            </p>
+            <p className="text-sm text-foreground">
+              <strong>Solution:</strong> Verify your password is correct. Check Neon Console for the correct connection string.
+            </p>
+          </Card>
+
+          <Card className="p-4 border-amber-200 bg-amber-50">
+            <h4 className="font-semibold text-foreground mb-2">SSL Error</h4>
+            <p className="text-sm text-foreground mb-2">
+              <strong>Error:</strong> "SSL/TLS required"
+            </p>
+            <p className="text-sm text-foreground">
+              <strong>Solution:</strong> Your connection string should include <code className="bg-white px-1 rounded text-xs">?sslmode=require</code>. Make sure you're using HTTPS/SSL.
+            </p>
+          </Card>
         </section>
 
-        {/* Best Practices */}
+        {/* Resources */}
         <section>
-          <h3 className="text-xl font-bold text-foreground mb-4">Best Practices</h3>
-          <div className="space-y-4">
-            <Card className="p-4 border-green-200 bg-green-50">
-              <h4 className="font-semibold text-foreground mb-2">Use Direct Connection for Migrations</h4>
-              <p className="text-sm text-muted-foreground">
-                For schema changes (CREATE INDEX CONCURRENTLY, migrations), use the direct connection without -pooler.
-              </p>
-            </Card>
-            <Card className="p-4 border-blue-200 bg-blue-50">
-              <h4 className="font-semibold text-foreground mb-2">Keep Scripts Version Controlled</h4>
-              <p className="text-sm text-muted-foreground">
-                Store your SQL migration scripts in git for tracking and reproducibility.
-              </p>
-            </Card>
-            <Card className="p-4 border-purple-200 bg-purple-50">
-              <h4 className="font-semibold text-foreground mb-2">Test in Development First</h4>
-              <p className="text-sm text-muted-foreground">
-                Always test SQL changes on a development branch before applying to production.
-              </p>
-            </Card>
-            <Card className="p-4 border-indigo-200 bg-indigo-50">
-              <h4 className="font-semibold text-foreground mb-2">Regular Backups</h4>
-              <p className="text-sm text-muted-foreground">
-                Use pg_dump regularly to create backups of your database.
-              </p>
-            </Card>
-          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Resources</h2>
+          <Card className="p-4 border-blue-200 bg-blue-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">Official psql Documentation</h4>
+            <p className="text-sm text-foreground">
+              <a href="https://www.postgresql.org/docs/current/app-psql.html" className="text-blue-700 hover:underline">
+                PostgreSQL psql Manual
+              </a>
+            </p>
+          </Card>
+
+          <Card className="p-4 border-blue-200 bg-blue-50">
+            <h4 className="font-semibold text-foreground mb-2">PostgreSQL Command Reference</h4>
+            <p className="text-sm text-foreground">
+              <a href="https://www.postgresql.org/docs/current/sql-commands.html" className="text-blue-700 hover:underline">
+                SQL Commands Reference
+              </a>
+            </p>
+          </Card>
         </section>
       </div>
     </GuideLayout>

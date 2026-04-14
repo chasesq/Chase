@@ -261,6 +261,93 @@ export const handler = async (event) => {
           />
         </section>
 
+        {/* Cold Start Optimization */}
+        <section>
+          <h3 className="text-xl font-bold text-foreground mb-4">Cold Start Optimization</h3>
+          <p className="text-muted-foreground mb-4">
+            Cold starts are a key concern in serverless. Here&apos;s how to minimize them:
+          </p>
+
+          <Card className="p-4 border-blue-200 bg-blue-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">HTTP Transport is Faster</h4>
+            <p className="text-sm text-foreground">
+              HTTP requires fewer round trips than WebSocket. Use HTTP for simple operations on cold starts.
+            </p>
+          </Card>
+
+          <Card className="p-4 border-green-200 bg-green-50 mb-4">
+            <h4 className="font-semibold text-foreground mb-2">Bundle Size Matters</h4>
+            <p className="text-sm text-foreground">
+              Keep your dependencies minimal. The serverless driver is lightweight (~50KB), while full ORMs can be larger.
+            </p>
+          </Card>
+
+          <Card className="p-4 border-amber-200 bg-amber-50">
+            <h4 className="font-semibold text-foreground mb-2">Connection Caching</h4>
+            <p className="text-sm text-foreground">
+              Some serverless platforms keep functions warm between requests. You can cache initialized clients in module scope.
+            </p>
+          </Card>
+        </section>
+
+        {/* Connection Pooling for Serverless */}
+        <section>
+          <h3 className="text-xl font-bold text-foreground mb-4">Connection Pooling in Serverless</h3>
+          <p className="text-muted-foreground mb-4">
+            Traditional connection pooling doesn&apos;t work well in serverless because each function instance is ephemeral. Instead, use PgBouncer with Neon&apos;s pooled connection string.
+          </p>
+
+          <CodeExampleBlock
+            title="Using Neon Pooled Connection"
+            description="Leverage Neon's built-in PgBouncer pooling"
+            code={`// Use the pooled connection string (includes -pooler)
+const connectionString = process.env.DATABASE_URL;
+// postgresql://....-pooler.us-east-2.aws.neon.tech/dbname
+
+// This automatically routes through Neon's PgBouncer
+// No need for client-side pooling in serverless
+const result = await sql\`SELECT * FROM users WHERE id = \${userId}\`;`}
+          />
+        </section>
+
+        {/* Monitoring and Debugging */}
+        <section>
+          <h3 className="text-xl font-bold text-foreground mb-4">Monitoring & Debugging</h3>
+          <p className="text-muted-foreground mb-4">
+            Debugging database issues in serverless is different from traditional apps. Here are strategies:
+          </p>
+
+          <div className="space-y-4">
+            <Card className="p-4 border-blue-200 bg-blue-50">
+              <h4 className="font-semibold text-foreground mb-2">Use Structured Logging</h4>
+              <p className="text-sm text-foreground">
+                Log queries with context so you can trace issues across requests.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-green-200 bg-green-50">
+              <h4 className="font-semibold text-foreground mb-2">Monitor Query Performance</h4>
+              <p className="text-sm text-foreground">
+                Track slow queries. Serverless functions have timeout limits, so slow queries can cause failures.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-purple-200 bg-purple-50">
+              <h4 className="font-semibold text-foreground mb-2">Check Neon Logs</h4>
+              <p className="text-sm text-foreground">
+                Use Neon Console to view database activity and error logs when debugging issues.
+              </p>
+            </Card>
+
+            <Card className="p-4 border-amber-200 bg-amber-50">
+              <h4 className="font-semibold text-foreground mb-2">Test Locally</h4>
+              <p className="text-sm text-foreground">
+                Always test serverless code locally with the same connection string before deploying.
+              </p>
+            </Card>
+          </div>
+        </section>
+
         {/* Best Practices */}
         <section>
           <h3 className="text-xl font-bold text-foreground mb-4">Serverless Best Practices</h3>
@@ -287,6 +374,12 @@ export const handler = async (event) => {
               <h4 className="font-semibold text-foreground mb-2">4. Environment Variables</h4>
               <p className="text-sm text-muted-foreground">
                 Store your DATABASE_URL as a secure environment variable. Never commit credentials to version control.
+              </p>
+            </Card>
+            <Card className="p-4 border-red-200 bg-red-50">
+              <h4 className="font-semibold text-foreground mb-2">5. Timeout Management</h4>
+              <p className="text-sm text-muted-foreground">
+                Set database query timeouts below your serverless function timeout. Avoid queries that take minutes to complete.
               </p>
             </Card>
           </div>
