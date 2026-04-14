@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createUser, getUserByEmail } from '@/lib/db'
+import { createUser, getUserByEmail, createAccount } from '@/lib/db'
 import { hashPassword, validatePassword, validateEmail, createUserSession } from '@/lib/auth'
+import { generateAccountNumber } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
@@ -103,6 +104,22 @@ export async function POST(request: NextRequest) {
 
     console.log('[Neon Sign-up] User created successfully:', newUser.id)
 
+    // Auto-create a checking account with zero balance
+    let checkingAccount = null
+    try {
+      const accountNumber = generateAccountNumber()
+      checkingAccount = await createAccount(newUser.id, {
+        account_type: 'Checking',
+        account_number: accountNumber,
+        balance: 0,
+        currency: currency || 'USD',
+      })
+      console.log('[Neon Sign-up] Checking account created:', checkingAccount.id)
+    } catch (accountError) {
+      console.error('[v0] Error creating checking account:', accountError)
+      // Continue even if account creation fails - user was created successfully
+    }
+
     // Create session for auto-login
     try {
       await createUserSession(newUser.id)
@@ -117,6 +134,11 @@ export async function POST(request: NextRequest) {
       email: newUser.email,
       full_name: newUser.full_name,
       phone: userPhone,
+      checking_account: checkingAccount ? {
+        id: checkingAccount.id,
+        account_number: checkingAccount.account_number,
+        balance: 0,
+      } : null,
     }
 
     return NextResponse.json(
