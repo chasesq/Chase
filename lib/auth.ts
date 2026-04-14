@@ -1,30 +1,36 @@
 import { createSession, deleteSession, getSession } from './db'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
+import bcrypt from 'bcrypt'
 
 const SESSION_COOKIE_NAME = 'chase_session_token'
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+const BCRYPT_ROUNDS = 12
 
 /**
- * Hash a password using a simple approach
- * In production, use bcrypt or argon2
+ * Hash a password using bcrypt
  */
 export async function hashPassword(password: string): Promise<string> {
-  // Using Web Crypto API for hashing
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
-  return hashHex
+  try {
+    const hash = await bcrypt.hash(password, BCRYPT_ROUNDS)
+    return hash
+  } catch (error) {
+    console.error('[v0] Error hashing password:', error)
+    throw new Error('Failed to hash password')
+  }
 }
 
 /**
- * Verify a password against a hash
+ * Verify a password against a bcrypt hash
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const passwordHash = await hashPassword(password)
-  return passwordHash === hash
+  try {
+    const isValid = await bcrypt.compare(password, hash)
+    return isValid
+  } catch (error) {
+    console.error('[v0] Error verifying password:', error)
+    return false
+  }
 }
 
 /**
