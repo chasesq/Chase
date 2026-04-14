@@ -700,10 +700,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
       setSignupStep(2)
     } else if (signupStep === 2) {
-      if (!signupData.ssn || !signupData.dob || !signupData.address) {
+      if (!signupData.ssn || !signupData.dob || !signupData.address || !signupData.city || !signupData.state || !signupData.zip) {
         toast({
           title: "Missing Information",
-          description: "Please fill in all required fields.",
+          description: "Please fill in all required fields (Street, City, State, and ZIP Code).",
           variant: "destructive",
         })
         return
