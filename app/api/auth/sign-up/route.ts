@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     const missingFields = requiredFields.filter((field) => !body[field])
     
     if (missingFields.length > 0) {
+      console.error('[v0] Missing required fields:', missingFields)
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 },
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
+      console.error('[v0] Invalid email format:', email)
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 },
@@ -48,6 +50,7 @@ export async function POST(request: NextRequest) {
     // Password validation - must meet complexity requirements
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
     if (!passwordRegex.test(password)) {
+      console.error('[v0] Password does not meet requirements')
       return NextResponse.json(
         {
           error: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character',
@@ -65,6 +68,7 @@ export async function POST(request: NextRequest) {
       age--
     }
     if (age < 18) {
+      console.error('[v0] User age is less than 18:', age)
       return NextResponse.json(
         { error: 'You must be at least 18 years old to open an account' },
         { status: 400 },
@@ -74,6 +78,7 @@ export async function POST(request: NextRequest) {
     // Phone validation
     const phoneRegex = /^[+]?[0-9\s\-()]+$/
     if (!phoneRegex.test(phone)) {
+      console.error('[v0] Invalid phone format:', phone)
       return NextResponse.json(
         { error: 'Invalid phone number format' },
         { status: 400 },

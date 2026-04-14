@@ -700,10 +700,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
       setSignupStep(2)
     } else if (signupStep === 2) {
-      if (!signupData.ssn || !signupData.dob || !signupData.address) {
+      if (!signupData.ssn || !signupData.dob || !signupData.address || !signupData.city || !signupData.state || !signupData.zip) {
         toast({
           title: "Missing Information",
-          description: "Please fill in all required fields.",
+          description: "Please fill in all required fields (Street, City, State, and ZIP Code).",
           variant: "destructive",
         })
         return
@@ -840,31 +840,69 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
         toast({
           title: "Account Created Successfully",
-          description: `Welcome to Chase! Your account number is ${data.maskedAccountNumber || "ready"}. You can now sign in with your credentials.`,
+          description: `Welcome to Chase! Your account number is ${data.maskedAccountNumber || "ready"}. Redirecting to dashboard...`,
         })
 
-        // Pre-fill the username for convenience
-        setUsername(signupData.username)
+        // Pre-fill the username for convenience and auto-login
+        setUsername(signupData.email)
+        
+        // Auto-login after successful signup
+        setTimeout(async () => {
+          try {
+            const loginResponse = await fetch('/api/auth', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                action: 'signin',
+                email: signupData.email,
+                password: signupData.password,
+              }),
+            })
 
-        setModalView("none")
-        setSignupStep(1)
-        setSignupData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
-          ssn: "",
-          dob: "",
-          address: "",
-          city: "",
-          state: "",
-          zip: "",
-          username: "",
-          password: "",
-          confirmPassword: "",
-          agreeTerms: false,
-          agreeElectronic: false,
-        })
+            const loginData = await loginResponse.json()
+
+            if (loginResponse.ok && loginData.user) {
+              // Store the authenticated user
+              localStorage.setItem('chase_current_user', JSON.stringify({
+                id: loginData.user.id,
+                email: loginData.user.email,
+                name: loginData.user.full_name,
+              }))
+
+              // Close the modal completely to show dashboard
+              setModalView("none")
+              setSignupStep(1)
+              
+              // Reset the form
+              setSignupData({
+                firstName: "",
+                lastName: "",
+                email: "",
+                phone: "",
+                ssn: "",
+                dob: "",
+                address: "",
+                city: "",
+                state: "",
+                zip: "",
+                username: "",
+                password: "",
+                confirmPassword: "",
+                agreeTerms: false,
+                agreeElectronic: false,
+              })
+              
+              toast({
+                title: "Welcome!",
+                description: "You are now logged in. Enjoy your Chase banking experience!",
+              })
+            }
+          } catch (err) {
+            console.error("[v0] Auto-login error:", err)
+            // Show login form if auto-login fails
+            setModalView("login")
+          }
+        }, 1500)
       } catch (error) {
         console.error("[v0] Signup error:", error)
         toast({
@@ -1807,6 +1845,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#117aca]"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ZIP Code *</label>
+                      <input
+                        type="text"
+                        value={signupData.zip}
+                        onChange={(e) => setSignupData({ ...signupData, zip: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#117aca]"
+                        placeholder="12345"
+                      />
                     </div>
                   </div>
                 </>
