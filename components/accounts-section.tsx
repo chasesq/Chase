@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useBanking } from "@/lib/banking-context"
 import { useState } from "react"
+import { formatAccountNumberDisplay } from "@/lib/utils"
 
 interface AccountsSectionProps {
   onViewAccount: () => void
@@ -107,13 +108,13 @@ export function AccountsSection({
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {account.name}
+                  {account.name || account.account_type || 'Account'}
                 </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
-                  {account.id === "1" ? account.accountNumber : `...${account.accountNumber}`}
+                  {account.account_number ? formatAccountNumberDisplay(account.account_number) : 'Account'}
                 </span>
                 <div className="text-right">
                   <span className="text-xl font-bold">
