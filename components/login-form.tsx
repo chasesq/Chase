@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -18,64 +17,18 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   const [error, setError] = useState<string | null>(null)
   const [errorCode, setErrorCode] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isResending, setIsResending] = useState(false)
-  const [resendSuccess, setResendSuccess] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
-  const handleResendVerification = async () => {
-    if (!email) {
-      setError('Please enter your email address first')
-      return
-    }
-    
-    setIsResending(true)
-    try {
-      const response = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-      
-      if (response.ok) {
-        setResendSuccess(true)
-        setError(null)
-        setErrorCode(null)
-      } else {
-        const data = await response.json()
-        setError(data.error || 'Failed to resend verification email')
-      }
-    } catch {
-      setError('Failed to resend verification email')
-    } finally {
-      setIsResending(false)
-    }
-  }
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
     setErrorCode(null)
-    setResendSuccess(false)
 
     try {
-      // Sign in with Supabase directly to establish session
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (authError) {
-        if (authError.message.includes('Email not confirmed')) {
-          setErrorCode('EMAIL_NOT_CONFIRMED')
-          throw new Error('Please verify your email before logging in.')
-        }
-        setErrorCode('INVALID_CREDENTIALS')
-        throw new Error('Invalid email or password.')
-      }
-
-      // Fetch user profile from API
+      // Send login request to API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,6 +36,11 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       })
 
       const data = await response.json()
+
+      if (!response.ok) {
+        setErrorCode(data.code || null)
+        throw new Error(data.error || 'Login failed')
+      }
 
       // Store user profile in localStorage
       if (data.user) {
@@ -169,33 +127,13 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           </div>
         </div>
 
-        {/* Success Message */}
-        {resendSuccess && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-            <Mail className="h-4 w-4 text-emerald-400" />
-            <p className="text-sm text-emerald-400">Verification email sent! Please check your inbox.</p>
-          </div>
-        )}
-
         {/* Error Message */}
         {error && (
-          <div className="flex flex-col gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-red-400" />
               <p className="text-sm text-red-400">{error}</p>
             </div>
-            {(errorCode === 'EMAIL_NOT_CONFIRMED' || errorCode === 'INVALID_CREDENTIALS') && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleResendVerification}
-                disabled={isResending}
-                className="w-fit text-xs border-white/20 text-white/70 hover:bg-white/10"
-              >
-                {isResending ? 'Sending...' : 'Resend verification email'}
-              </Button>
-            )}
           </div>
         )}
 

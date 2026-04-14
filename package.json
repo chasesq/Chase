@@ -77,6 +77,7 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "tw-animate-css": "latest",
+    "uuid": "^13.0.0",
     "vaul": "latest",
     "zod": "3.25.76"
   },
