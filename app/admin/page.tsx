@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { ProtectedAdminRoute } from '@/lib/auth/protected-admin'
 import AdminTransferForm from '@/components/admin/admin-transfer-form'
 import AdminUsersList from '@/components/admin/admin-users-list'
 import AdminTransferHistory from '@/components/admin/admin-transfer-history'
@@ -38,7 +39,15 @@ interface AdminTransfer {
   accounts?: { id: string; name: string; type: string }
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboardPage() {
+  return (
+    <ProtectedAdminRoute>
+      <AdminDashboardContent />
+    </ProtectedAdminRoute>
+  )
+}
+
+function AdminDashboardContent() {
   const [newUsers, setNewUsers] = useState<NewUser[]>([])
   const [pendingTransfers, setPendingTransfers] = useState<AdminTransfer[]>([])
   const [transferHistory, setTransferHistory] = useState<AdminTransfer[]>([])

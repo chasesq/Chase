@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { User, Session } from "@supabase/supabase-js"
+import { hasPermission, isAdminRole, type UserRole } from "@/lib/auth/roles"
 
 export interface UserProfile {
   id: string
@@ -17,6 +18,7 @@ export interface UserProfile {
   member_since: string | null
   created_at: string
   updated_at: string
+  role?: UserRole
 }
 
 interface AuthContextType {
@@ -32,6 +34,9 @@ interface AuthContextType {
   updatePassword: (password: string) => Promise<{ error: Error | null }>
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: Error | null }>
   refreshProfile: () => Promise<void>
+  userRole: UserRole | null
+  isAdmin: boolean
+  hasPermission: (permission: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -48,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .select("*")
         .eq("id", userId)
         .single()
@@ -239,7 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const { error } = await supabase
-        .from("profiles")
+        .from("users")
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
@@ -271,6 +276,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updatePassword,
     updateProfile,
     refreshProfile,
+    userRole: profile?.role ?? null,
+    isAdmin: profile?.role ? isAdminRole(profile.role) : false,
+    hasPermission: (permission: string) => {
+      if (!profile?.role) return false
+      return hasPermission(profile.role, permission)
+    },
   }
 
   return (

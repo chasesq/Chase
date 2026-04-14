@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { validateStepUpToken, consumeStepUpToken } from '@/lib/auth/stepup'
 import { getAuth0MyAccountClient } from '@/lib/auth0/my-account-client'
+import { profileUpdateSchema, sensitiveFieldSchema } from '@/lib/validation/profile-schema'
 
 // Sensitive fields that require step-up authentication
-const SENSITIVE_FIELDS = ['email', 'phone', 'firstName', 'lastName']
+const SENSITIVE_FIELDS = ['email', 'phone', 'full_name']
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,16 +33,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Return all profile fields including extended ones
     return NextResponse.json({
       id: user.id,
       email: user.email,
-      firstName: user.first_name || '',
-      lastName: user.last_name || '',
+      full_name: user.full_name || '',
       phone: user.phone || '',
-      profilePicture: user.profile_picture || null,
-      twoFactorEnabled: user.two_factor_enabled || false,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
+      address: user.address || '',
+      date_of_birth: user.date_of_birth || null,
+      government_id_type: user.government_id_type || '',
+      account_type_preference: user.account_type_preference || '',
+      currency_preference: user.currency_preference || 'USD',
+      language_preference: user.language_preference || 'en',
+      email_notifications: user.email_notifications ?? true,
+      sms_notifications: user.sms_notifications ?? false,
+      inapp_notifications: user.inapp_notifications ?? true,
+      two_factor_enabled: user.two_factor_enabled ?? false,
+      tier: user.tier || 'standard',
+      balance: user.balance || 0,
+      role: user.role || 'user',
+      created_at: user.created_at,
+      updated_at: user.updated_at,
     })
   } catch (error) {
     console.error('[v0] Profile GET error:', error)
@@ -55,7 +67,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, firstName, lastName, phone, profilePicture, twoFactorEnabled } = body
+    const { email, ...updateFields } = body
 
     if (!email) {
       return NextResponse.json(
@@ -64,11 +76,18 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Validate the update fields using Zod schema
+    const validationResult = profileUpdateSchema.safeParse(updateFields)
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationResult.error.flatten() },
+        { status: 400 }
+      )
+    }
+
     // Check if any sensitive fields are being updated
     const updatesSensitiveFields = SENSITIVE_FIELDS.some(
-      (field) =>
-        body[field] !== undefined &&
-        (field === 'email' ? body[field] !== email : true)
+      (field) => updateFields[field] !== undefined
     )
 
     // If sensitive fields are being updated, verify step-up authentication
@@ -103,16 +122,33 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Prepare update data
+    // Prepare update data - convert camelCase to snake_case for database
     const updateData: any = {
       updated_at: new Date().toISOString(),
     }
 
-    if (firstName !== undefined) updateData.first_name = firstName
-    if (lastName !== undefined) updateData.last_name = lastName
-    if (phone !== undefined) updateData.phone = phone
-    if (profilePicture !== undefined) updateData.profile_picture = profilePicture
-    if (twoFactorEnabled !== undefined) updateData.two_factor_enabled = twoFactorEnabled
+    // Map all update fields to database column names
+    const fieldMapping: Record<string, string> = {
+      full_name: 'full_name',
+      phone: 'phone',
+      address: 'address',
+      date_of_birth: 'date_of_birth',
+      government_id_type: 'government_id_type',
+      account_type_preference: 'account_type_preference',
+      currency_preference: 'currency_preference',
+      language_preference: 'language_preference',
+      email_notifications: 'email_notifications',
+      sms_notifications: 'sms_notifications',
+      inapp_notifications: 'inapp_notifications',
+      two_factor_enabled: 'two_factor_enabled',
+    }
+
+    for (const [key, value] of Object.entries(validationResult.data)) {
+      const dbColumn = fieldMapping[key]
+      if (dbColumn) {
+        updateData[dbColumn] = value
+      }
+    }
 
     // Update in Supabase
     const { data: updated, error: updateError } = await supabase
@@ -129,35 +165,20 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Sync with Auth0 if user has Auth0 ID
-    if (user.auth0_id) {
+    // Sync with Auth0 if user has Auth0 ID and name was updated
+    if (user.auth0_id && updateFields.full_name) {
       try {
         const auth0Client = getAuth0MyAccountClient()
-        const auth0Updates: any = {}
+        const [firstName, ...lastNameParts] = updateFields.full_name.split(' ')
+        const lastName = lastNameParts.join(' ')
 
-        if (firstName !== undefined || lastName !== undefined) {
-          auth0Updates.given_name = firstName
-          auth0Updates.family_name = lastName
-        }
-        if (phone !== undefined) {
-          auth0Updates.phone_number = phone
-        }
-
-        // Update user metadata for additional fields
-        const metadata: any = {}
-        if (firstName !== undefined) metadata.first_name = firstName
-        if (lastName !== undefined) metadata.last_name = lastName
-
-        if (Object.keys(auth0Updates).length > 0) {
-          await auth0Client.updateUserProfile(user.auth0_id, auth0Updates)
-        }
-        if (Object.keys(metadata).length > 0) {
-          await auth0Client.updateUserMetadata(user.auth0_id, metadata)
-        }
+        await auth0Client.updateUserProfile(user.auth0_id, {
+          given_name: firstName,
+          family_name: lastName,
+        })
       } catch (auth0Error) {
         console.error('[v0] Failed to sync with Auth0:', auth0Error)
-        // Log the error but don't fail the request
-        // The local update was successful, Auth0 sync is secondary
+        // Log but don't fail the request
       }
     }
 
@@ -176,18 +197,28 @@ export async function PUT(request: NextRequest) {
       console.error('[v0] Failed to log audit entry:', auditError)
     }
 
+    // Return updated profile
     return NextResponse.json({
       success: true,
       profile: {
         id: updated.id,
         email: updated.email,
-        firstName: updated.first_name || '',
-        lastName: updated.last_name || '',
+        full_name: updated.full_name || '',
         phone: updated.phone || '',
-        profilePicture: updated.profile_picture || null,
-        twoFactorEnabled: updated.two_factor_enabled || false,
-        createdAt: updated.created_at,
-        updatedAt: updated.updated_at,
+        address: updated.address || '',
+        date_of_birth: updated.date_of_birth || null,
+        government_id_type: updated.government_id_type || '',
+        account_type_preference: updated.account_type_preference || '',
+        currency_preference: updated.currency_preference || 'USD',
+        language_preference: updated.language_preference || 'en',
+        email_notifications: updated.email_notifications ?? true,
+        sms_notifications: updated.sms_notifications ?? false,
+        inapp_notifications: updated.inapp_notifications ?? true,
+        two_factor_enabled: updated.two_factor_enabled ?? false,
+        tier: updated.tier || 'standard',
+        role: updated.role || 'user',
+        created_at: updated.created_at,
+        updated_at: updated.updated_at,
       },
     })
   } catch (error) {

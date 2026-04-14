@@ -5,20 +5,17 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { verifyAdminAccess } from '@/app/api/middleware/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServiceClient()
-    const adminId = request.headers.get('x-user-id')
-    const role = request.headers.get('x-user-role')
-
     // Verify admin access
-    if (role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
-      )
+    const adminVerification = verifyAdminAccess(request)
+    if (adminVerification.error) {
+      return adminVerification.error
     }
+
+    const supabase = createServiceClient()
 
     // Get all users with their account information
     const { data: users, error } = await supabase
