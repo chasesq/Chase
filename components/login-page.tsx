@@ -719,10 +719,19 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         return
       }
 
-      if (signupData.password.length < 8) {
+      // Validate password strength requirements
+      const passwordValidation = {
+        minLength: signupData.password.length >= 8,
+        hasUppercase: /[A-Z]/.test(signupData.password),
+        hasLowercase: /[a-z]/.test(signupData.password),
+        hasNumber: /\d/.test(signupData.password),
+        hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(signupData.password),
+      }
+
+      if (!Object.values(passwordValidation).every(Boolean)) {
         toast({
           title: "Weak Password",
-          description: "Password must be at least 8 characters.",
+          description: "Password must contain uppercase, lowercase, number, special character, and be at least 8 characters.",
           variant: "destructive",
         })
         return
@@ -761,17 +770,30 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       setIsLoading(true)
 
       try {
-        // Call backend API to create user account
+        // Call backend API to create user account with all profile data
         const fullName = `${signupData.firstName} ${signupData.lastName}`
-        const response = await fetch('/api/auth', {
+        const response = await fetch('/api/auth/sign-up', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'signup',
+            firstName: signupData.firstName,
+            lastName: signupData.lastName,
             email: signupData.email,
-            password: signupData.password,
-            name: fullName,
             phone: signupData.phone,
+            password: signupData.password,
+            street: signupData.address,
+            city: signupData.city,
+            state: signupData.state,
+            zipCode: signupData.zip,
+            dateOfBirth: signupData.dob,
+            governmentIdType: 'SSN', // Default to SSN for now
+            accountType: 'checking', // Default account type
+            currency: 'USD',
+            language: 'en',
+            emailNotifications: true,
+            smsNotifications: false,
+            inAppNotifications: true,
+            twoFactorEnabled: false,
           }),
         })
 
@@ -1824,6 +1846,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                           </li>
                           <li className={/\d/.test(signupData.password) ? "text-green-600" : "text-gray-500"}>
                             {/\d/.test(signupData.password) ? "✓" : "○"} One number
+                          </li>
+                          <li className={/[!@#$%^&*(),.?":{}|<>]/.test(signupData.password) ? "text-green-600" : "text-gray-500"}>
+                            {/[!@#$%^&*(),.?":{}|<>]/.test(signupData.password) ? "✓" : "○"} One special character
                           </li>
                         </ul>
                       </div>
