@@ -128,8 +128,9 @@ export default function Page() {
   }, [isAuthenticated, addActivity, addLoginHistory, toast, getUserFirstName])
 
   const handleLogin = () => {
-    // Auth is now handled by AuthContext - this is kept for LoginPage compatibility
-    // The user will be redirected after successful Supabase auth
+    // Refresh the page to pick up the new authentication state from localStorage
+    // The AuthContext will re-initialize with the logged-in user data
+    window.location.reload()
   }
 
   const handleLogout = async () => {

@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state from localStorage
   useEffect(() => {
-    const initAuth = async () => {
+    const initAuth = () => {
       try {
         // Check if user is logged in by checking localStorage
         const isLoggedIn = localStorage.getItem("chase_logged_in") === "true"
@@ -56,12 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const userProfileData = JSON.parse(userProfileStr) as UserProfile
             setUser(userProfileData)
             setProfile(userProfileData)
+            console.log("[AuthContext] User authenticated from localStorage:", userProfileData.email)
           } catch (err) {
             console.error("[AuthContext] Error parsing user profile:", err)
             // Clear invalid data
             localStorage.removeItem("user_profile")
             localStorage.removeItem("chase_logged_in")
           }
+        } else {
+          console.log("[AuthContext] No user session found in localStorage")
         }
       } catch (err) {
         console.error("[AuthContext] Error initializing auth:", err)
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Use synchronous initialization to avoid race conditions
     initAuth()
   }, [])
 
