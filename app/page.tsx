@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
 import { useAuth } from "@/lib/auth-context"
+import { ChaseSplashScreen } from "@/components/chase-splash-screen"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -40,6 +41,7 @@ type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-g
 
 export default function Page() {
   const { isAuthenticated, isLoading: isAuthLoading, user, profile, signOut } = useAuth()
+  const [showSplash, setShowSplash] = useState(!isAuthenticated)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
 
@@ -289,6 +291,17 @@ export default function Page() {
 
   // Show login page if not authenticated
   if (!isAuthenticated && !isAuthLoading) {
+    if (showSplash) {
+      return (
+        <>
+          <ChaseSplashScreen 
+            onComplete={() => setShowSplash(false)}
+            duration={2500}
+          />
+          <LoginPage onLogin={handleLogin} />
+        </>
+      )
+    }
     return <LoginPage onLogin={handleLogin} />
   }
 
