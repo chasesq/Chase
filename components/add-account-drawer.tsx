@@ -52,29 +52,38 @@ export function AddAccountDrawer({ open, onOpenChange, onAccountAdded }: AddAcco
   const handleConfirm = async () => {
     setIsLoading(true)
     try {
+      // Get user ID from localStorage
+      const userId = localStorage.getItem('userId')
+      if (!userId) {
+        throw new Error('User not authenticated')
+      }
+
       // Call backend API to open account
-      const response = await fetch("/api/accounts/open", {
+      const response = await fetch("/api/accounts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": userId,
+        },
         body: JSON.stringify({
-          accountType: selectedType,
-          initialDeposit: parseFloat(accountDetails.initialDeposit) || 0,
-          fundingSource: accountDetails.fundingSource,
-          linkExternal: accountDetails.linkExternally,
+          account_type: accountTypes[selectedType]?.name || selectedType,
+          currency: "USD",
+          // New accounts always start with zero balance
+          balance: 0,
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to open account")
+        throw new Error(data.error || data.message || "Failed to open account")
       }
 
-      console.log("[v0] Account opened successfully:", data)
+      console.log("[v0] Account opened successfully:", data.account)
 
       toast({
         title: "Account Created",
-        description: `Your new ${accountTypes[selectedType]?.name} has been successfully opened.`,
+        description: `Your new ${accountTypes[selectedType]?.name} has been successfully opened with $0 balance.`,
       })
 
       setStep("success")
