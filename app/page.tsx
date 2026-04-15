@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
 import { useAuth } from "@/lib/auth-context"
+import ChaseInitializationScreen from "@/components/chase-initialization-screen"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -289,17 +290,7 @@ export default function Page() {
 
   // Show loading state while checking auth
   if (isAuthLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0a4fa6]/5 to-white">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-[#0a4fa6] animate-spin" />
-          <p className="text-gray-600 font-medium">
-            Initializing...
-          </p>
-          <p className="text-xs text-gray-400">Please wait while we prepare everything</p>
-        </div>
-      </div>
-    )
+    return <ChaseInitializationScreen isLoading={true} />
   }
 
   if (!isAuthenticated) {
