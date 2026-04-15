@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
 import { useAuth } from "@/lib/auth-context"
-import ChaseInitializationScreen from "@/components/chase-initialization-screen"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -288,12 +287,8 @@ export default function Page() {
     }
   }
 
-  // Show loading state while checking auth
-  if (isAuthLoading) {
-    return <ChaseInitializationScreen isLoading={true} />
-  }
-
-  if (!isAuthenticated) {
+  // Show login page if not authenticated
+  if (!isAuthenticated && !isAuthLoading) {
     return <LoginPage onLogin={handleLogin} />
   }
 

@@ -9,7 +9,6 @@ import { RealtimeProvider } from "@/lib/realtime-orchestrator"
 import { ACULProvider } from "@/lib/auth0/acul-context"
 import { AuthProvider } from "@/lib/auth-context"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { InitializationWrapper } from "@/components/initialization-wrapper"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -56,22 +55,20 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased overflow-x-hidden overscroll-none touch-pan-y">
-        <InitializationWrapper>
-          <ErrorBoundary>
-            <AuthProvider>
-              <ACULProvider>
-                <RealtimeProvider>
-                  <BankingProvider>
-                    {children}
-                    <Toaster />
-                    <Analytics />
-                    <SpeedInsights />
-                  </BankingProvider>
-                </RealtimeProvider>
-              </ACULProvider>
-            </AuthProvider>
-          </ErrorBoundary>
-        </InitializationWrapper>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ACULProvider>
+              <RealtimeProvider>
+                <BankingProvider>
+                  {children}
+                  <Toaster />
+                  <Analytics />
+                  <SpeedInsights />
+                </BankingProvider>
+              </RealtimeProvider>
+            </ACULProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
