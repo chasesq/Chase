@@ -114,12 +114,25 @@ export default function Page() {
       })
     }
 
+    // Check if this is a new user (just signed up)
+    const isNewUser = localStorage.getItem('chase_just_signed_up') === 'true'
+    
     const welcomeTimer = setTimeout(() => {
-      toast({
-        title: `Welcome back, ${getUserFirstName()}!`,
-        description: "Your accounts are up to date.",
-        duration: 3000,
-      })
+      if (isNewUser) {
+        toast({
+          title: `Welcome to Chase, ${getUserFirstName()}!`,
+          description: "Your checking account is ready to use. Get started with zero balance.",
+          duration: 4000,
+        })
+        // Clear the flag after showing the welcome message
+        localStorage.removeItem('chase_just_signed_up')
+      } else {
+        toast({
+          title: `Welcome back, ${getUserFirstName()}!`,
+          description: "Your accounts are up to date.",
+          duration: 3000,
+        })
+      }
     }, 1500)
 
     return () => {

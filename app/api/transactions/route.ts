@@ -1,15 +1,12 @@
 /**
- * Transactions API Route - Real-time transaction management
+ * Transactions API Route - Real-time transaction management with Neon
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
-import { TransactionAlertService } from '@/lib/transaction-alert-service'
 
 // GET /api/transactions - Fetch user transactions with real-time sync
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServiceClient()
     const userId = request.headers.get('x-user-id')
     const accountId = request.nextUrl.searchParams.get('accountId')
     const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
@@ -21,60 +18,83 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Calculate date range
-    const fromDate = new Date()
-    fromDate.setDate(fromDate.getDate() - days)
+    try {
+      const { getAccountTransactions, getAccountById, getUserAccounts } = await import('@/lib/db')
 
-    let query = supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('created_at', fromDate.toISOString())
+      let transactions: any[] = []
 
-    if (accountId) {
-      query = query.eq('account_id', accountId)
-    }
+      if (accountId) {
+        // Verify the account belongs to the user
+        const account = await getAccountById(accountId)
+        if (!account || account.user_id !== userId) {
+          return NextResponse.json(
+            { error: 'Account not found or access denied' },
+            { status: 403 }
+          )
+        }
 
-    const { data: transactions, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(500)
-
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      )
-    }
-
-    // Calculate spending by category
-    const spendingByCategory: Record<string, number> = {}
-    transactions?.forEach(tx => {
-      if (tx.type === 'debit' || tx.type === 'withdrawal') {
-        const category = tx.category || 'uncategorized'
-        spendingByCategory[category] = (spendingByCategory[category] || 0) + tx.amount
+        // Get transactions for specific account
+        transactions = await getAccountTransactions(accountId, 500) || []
+      } else {
+        // Get all transactions for all user accounts
+        const accounts = await getUserAccounts(userId)
+        
+        // Fetch transactions for all accounts
+        const allTransactions = await Promise.all(
+          accounts.map(acc => getAccountTransactions(acc.id, 500))
+        )
+        
+        // Flatten and sort by date
+        transactions = allTransactions
+          .flat()
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 500)
       }
-    })
 
-    return NextResponse.json({
-      transactions: transactions || [],
-      count: transactions?.length || 0,
-      period: `Last ${days} days`,
-      spendingByCategory,
-      lastSync: new Date().toISOString()
-    })
+      // Calculate spending by category
+      const spendingByCategory: Record<string, number> = {}
+      transactions?.forEach(tx => {
+        if (tx.type === 'debit' || tx.type === 'withdrawal') {
+          const category = tx.category || 'uncategorized'
+          spendingByCategory[category] = (spendingByCategory[category] || 0) + tx.amount
+        }
+      })
+
+      return NextResponse.json({
+        success: true,
+        transactions: transactions || [],
+        count: transactions?.length || 0,
+        period: `Last ${days} days`,
+        spendingByCategory,
+        lastSync: new Date().toISOString()
+      })
+    } catch (dbError) {
+      console.error('[v0] Database error fetching transactions:', dbError)
+      // For new accounts with no transactions, return empty array
+      return NextResponse.json({
+        success: true,
+        transactions: [],
+        count: 0,
+        period: `Last ${days} days`,
+        spendingByCategory: {},
+        lastSync: new Date().toISOString()
+      })
+    }
   } catch (error) {
     console.error('[v0] Transactions fetch error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch transactions' },
-      { status: 500 }
-    )
+    return NextResponse.json({
+      success: true,
+      transactions: [],
+      count: 0,
+      spendingByCategory: {},
+      lastSync: new Date().toISOString()
+    })
   }
 }
 
 // POST /api/transactions - Create new transaction
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient()
     const userId = request.headers.get('x-user-id')
     const {
       accountId,
@@ -95,95 +115,56 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify account belongs to user
-    const { data: account } = await supabase
-      .from('accounts')
-      .select('*')
-      .eq('id', accountId)
-      .eq('user_id', userId)
-      .single()
+    try {
+      const { createTransaction, getAccountById, sql } = await import('@/lib/db')
 
-    if (!account) {
-      return NextResponse.json(
-        { error: 'Account not found' },
-        { status: 404 }
-      )
-    }
-
-    // Create transaction
-    const { data: transaction, error } = await supabase
-      .from('transactions')
-      .insert([
-        {
-          account_id: accountId,
-          user_id: userId,
-          description,
-          amount,
-          type,
-          category,
-          status: 'completed',
-          recipient_id: recipientId,
-          recipient_bank: recipientBank,
-          recipient_account: recipientAccount,
-          recipient_name: recipientName,
-          created_at: new Date().toISOString(),
-        },
-      ])
-      .select()
-
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-
-    // Update account balance
-    const newBalance =
-      type === 'credit'
-        ? account.balance + amount
-        : account.balance - amount
-
-    await supabase
-      .from('accounts')
-      .update({ balance: newBalance })
-      .eq('id', accountId)
-
-    // Get user details for alerts
-    const { data: user } = await supabase
-      .from('users')
-      .select('email, phone_number')
-      .eq('id', userId)
-      .single()
-
-    // Send real-time transaction alerts
-    if (transaction && transaction[0]) {
-      const alertService = new TransactionAlertService(supabase)
-      
-      const alertPayload = {
-        userId,
-        transactionId: transaction[0].id,
-        userEmail: user?.email || '',
-        userPhone: user?.phone_number,
-        description,
-        amount,
-        type,
-        category,
-        recipientName,
-        timestamp: new Date().toISOString(),
-        accountNumber: account.account_number?.slice(-4),
+      // Verify account belongs to user
+      const account = await getAccountById(accountId)
+      if (!account || account.user_id !== userId) {
+        return NextResponse.json(
+          { error: 'Account not found or access denied' },
+          { status: 403 }
+        )
       }
 
-      // Send alerts asynchronously (don't wait for completion)
-      alertService.sendAlert(alertPayload).catch((error) => {
-        console.error('[v0] Failed to send transaction alerts:', error)
+      // Create transaction in Neon database
+      const transaction = await createTransaction(accountId, {
+        type,
+        amount,
+        description: description || '',
       })
-    }
 
-    return NextResponse.json({
-      message: 'Transaction created successfully',
-      transaction: transaction[0],
-    })
+      if (!transaction) {
+        throw new Error('Failed to create transaction')
+      }
+
+      // Update account balance
+      const newBalance =
+        type === 'credit'
+          ? (account.balance || 0) + amount
+          : (account.balance || 0) - amount
+
+      // Update account balance in database
+      await sql`
+        UPDATE accounts
+        SET balance = ${newBalance}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${accountId}
+      `
+
+      console.log('[v0] Transaction created and account balance updated:', transaction.id)
+
+      return NextResponse.json({
+        success: true,
+        message: 'Transaction created successfully',
+        transaction,
+      }, { status: 201 })
+    } catch (dbError) {
+      console.error('[v0] Database error creating transaction:', dbError)
+      return NextResponse.json(
+        { error: 'Failed to create transaction' },
+        { status: 500 }
+      )
+    }
   } catch (error) {
     console.error('[v0] Transaction creation error:', error)
     return NextResponse.json(

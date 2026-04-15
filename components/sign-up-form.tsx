@@ -68,13 +68,22 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
 
       // Store user profile data and set logged-in flag
       if (data.user) {
-        localStorage.setItem('user_profile', JSON.stringify(data.user))
+        const userProfile = {
+          ...data.user,
+          email: email,
+        }
+        localStorage.setItem('user_profile', JSON.stringify(userProfile))
         localStorage.setItem('chase_logged_in', 'true')
         localStorage.setItem('userEmail', email)
+        localStorage.setItem('userId', data.user.id)
+        localStorage.setItem('userName', data.user.full_name || `${firstName} ${lastName}`.trim())
+        // Flag to show welcome message for new users
+        localStorage.setItem('chase_just_signed_up', 'true')
       }
 
       // Redirect to home dashboard on success (session is created server-side)
-      router.push('/')
+      // Use replace to prevent back button going to sign-up
+      router.replace('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during sign up')
     } finally {
