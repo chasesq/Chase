@@ -22,6 +22,7 @@ import {
 import { useBanking } from "@/lib/banking-context"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { formatAccountNumberDisplay, getAccountLast4 } from "@/lib/utils"
 
 interface AccountDetailsDrawerProps {
   open: boolean
@@ -83,8 +84,10 @@ export function AccountDetailsDrawer({ open, onOpenChange, accountId, onReceiptO
         <DrawerHeader className="border-b pb-4">
           <div className="flex items-center justify-between">
             <div>
-              <DrawerTitle className="text-lg">{account.name}</DrawerTitle>
-              <p className="text-sm text-muted-foreground">...{account.accountNumber}</p>
+              <DrawerTitle className="text-lg">{account.name || account.account_type} Account</DrawerTitle>
+              <p className="text-sm text-muted-foreground">
+                {account.account_number ? formatAccountNumberDisplay(account.account_number) : 'Account'}
+              </p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setShowBalance(!showBalance)}>
               {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

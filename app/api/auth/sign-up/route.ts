@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createUser, getUserByEmail, createAccount } from '@/lib/db'
+import { hashPassword, validatePassword, validateEmail, createUserSession } from '@/lib/auth'
+import { generateAccountNumber } from '@/lib/utils'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
+      // Basic fields from simple sign-up form
+      name,
+      email,
+      password,
+      phone_number,
+      // Extended fields from multi-step sign-up form
       firstName,
       lastName,
-      email,
       phone,
-      password,
       street,
       city,
       state,
@@ -19,148 +25,132 @@ export async function POST(request: NextRequest) {
       accountType,
       currency,
       language,
-      emailNotifications,
-      smsNotifications,
-      inAppNotifications,
-      twoFactorEnabled,
     } = body
 
+    // Determine which form was used and extract full name
+    const fullName = name || (firstName && lastName ? `${firstName} ${lastName}` : '')
+    const userPhone = phone_number || phone || ''
+    const userEmail = email?.toLowerCase().trim()
+
     // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'email', 'phone', 'password', 'street', 'city', 'state', 'zipCode', 'dateOfBirth', 'governmentIdType', 'accountType', 'currency', 'language']
-    const missingFields = requiredFields.filter((field) => !body[field])
-    
-    if (missingFields.length > 0) {
-      console.error('[v0] Missing required fields:', missingFields)
+    if (!userEmail || !password) {
+      console.error('[v0] Missing required fields: email or password')
       return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
+        { error: 'Email and password are required' },
         { status: 400 },
       )
     }
 
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      console.error('[v0] Invalid email format:', email)
+    if (!validateEmail(userEmail)) {
+      console.error('[v0] Invalid email format:', userEmail)
       return NextResponse.json(
         { error: 'Invalid email format' },
         { status: 400 },
       )
     }
 
-    // Password validation - must meet complexity requirements
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/
-    if (!passwordRegex.test(password)) {
-      console.error('[v0] Password does not meet requirements')
+    // Password validation
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.valid) {
+      console.error('[v0] Password validation failed:', passwordValidation.errors)
       return NextResponse.json(
-        {
-          error: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character',
+        { 
+          error: 'Password requirements not met',
+          details: passwordValidation.errors 
         },
         { status: 400 },
       )
     }
 
-    // Age validation - must be 18+
-    const birthDate = new Date(dateOfBirth)
-    const today = new Date()
-    let age = today.getFullYear() - birthDate.getFullYear()
-    const month = today.getMonth() - birthDate.getMonth()
-    if (month < 0 || (month === 0 && today.getDate() < birthDate.getDate())) {
-      age--
-    }
-    if (age < 18) {
-      console.error('[v0] User age is less than 18:', age)
+    // Check if user already exists
+    const existingUser = await getUserByEmail(userEmail)
+    if (existingUser) {
+      console.error('[v0] User already exists:', userEmail)
       return NextResponse.json(
-        { error: 'You must be at least 18 years old to open an account' },
-        { status: 400 },
+        { error: 'An account with this email already exists' },
+        { status: 409 },
       )
     }
 
-    // Phone validation
-    const phoneRegex = /^[+]?[0-9\s\-()]+$/
-    if (!phoneRegex.test(phone)) {
-      console.error('[v0] Invalid phone format:', phone)
-      return NextResponse.json(
-        { error: 'Invalid phone number format' },
-        { status: 400 },
-      )
-    }
+    // Hash password
+    const passwordHash = await hashPassword(password)
 
-    // Use service client to create user with auto-confirm
-    const supabase = createServiceClient()
+    // Build address if provided
+    const address = street && city && state && zipCode 
+      ? `${street}, ${city}, ${state} ${zipCode}` 
+      : null
 
-    // Create user with admin API - this auto-confirms the email
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email
-      user_metadata: {
-        full_name: `${firstName} ${lastName}`,
-        phone,
-      },
+    // Create user in database
+    const newUser = await createUser({
+      email: userEmail,
+      password_hash: passwordHash,
+      full_name: fullName || null,
+      phone: userPhone || null,
+      address: address || null,
+      date_of_birth: dateOfBirth || null,
+      government_id_type: governmentIdType || null,
+      account_type_preference: accountType || null,
+      currency_preference: currency || 'USD',
+      language_preference: language || 'en',
     })
 
-    if (error) {
-      console.error('[Supabase Sign-up] Error:', error.message)
-
-      // Handle specific Supabase errors
-      if (error.message.includes('already been registered') || error.message.includes('already exists')) {
-        return NextResponse.json(
-          { error: 'An account with this email already exists' },
-          { status: 409 },
-        )
-      }
-
-      return NextResponse.json(
-        { error: error.message || 'Failed to create user' },
-        { status: 400 },
-      )
-    }
-
-    if (!data.user) {
+    if (!newUser) {
       return NextResponse.json(
         { error: 'Failed to create user' },
         { status: 500 },
       )
     }
 
-    console.log('[Supabase Sign-up] User created and auto-confirmed:', data.user.id)
+    console.log('[Neon Sign-up] User created successfully:', newUser.id)
 
-    // Create comprehensive user profile in public.users table with all new fields
-    const { error: profileError } = await supabase
-      .from('users')
-      .insert({
-        id: data.user.id,
-        email,
-        full_name: `${firstName} ${lastName}`,
-        phone,
-        address: `${street}, ${city}, ${state} ${zipCode}`,
-        date_of_birth: dateOfBirth,
-        government_id_type: governmentIdType,
-        account_type_preference: accountType,
-        currency_preference: currency,
-        language_preference: language,
-        email_notifications: emailNotifications ?? true,
-        sms_notifications: smsNotifications ?? false,
-        inapp_notifications: inAppNotifications ?? true,
-        two_factor_enabled: twoFactorEnabled ?? false,
-        role: 'user', // Default role for new sign-ups
+    // Auto-create a checking account with zero balance
+    let checkingAccount = null
+    try {
+      const accountNumber = generateAccountNumber()
+      checkingAccount = await createAccount(newUser.id, {
+        account_type: 'Checking',
+        account_number: accountNumber,
+        balance: 0,
+        currency: currency || 'USD',
       })
+      console.log('[Neon Sign-up] Checking account created:', checkingAccount.id)
+    } catch (accountError) {
+      console.error('[v0] Error creating checking account:', accountError)
+      // Continue even if account creation fails - user was created successfully
+    }
 
-    if (profileError) {
-      console.error('[Supabase Sign-up] Profile creation error:', profileError.message)
-      // Continue even if profile creation fails - user auth was successful
+    // Create session for auto-login
+    try {
+      await createUserSession(newUser.id)
+    } catch (sessionError) {
+      console.error('[v0] Error creating session:', sessionError)
+      // Continue even if session creation fails - user was created successfully
+    }
+
+    // Return user data
+    const userProfile = {
+      id: newUser.id,
+      email: newUser.email,
+      full_name: newUser.full_name,
+      phone: userPhone,
+      checking_account: checkingAccount ? {
+        id: checkingAccount.id,
+        account_number: checkingAccount.account_number,
+        balance: 0,
+      } : null,
     }
 
     return NextResponse.json(
       {
-        message: 'Account created successfully! You can now log in.',
-        user_id: data.user.id,
-        email: data.user.email,
+        success: true,
+        message: 'Account created successfully!',
+        user: userProfile,
       },
       { status: 201 },
     )
   } catch (error) {
-    console.error('[Supabase Sign-up] Error:', error)
+    console.error('[Neon Sign-up] Error:', error)
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'An error occurred during sign-up',

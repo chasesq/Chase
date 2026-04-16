@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { useBanking } from "@/hooks/use-banking"
 import { useAuth } from "@/lib/auth-context"
+import { ChaseSplashScreen } from "@/components/chase-splash-screen"
 
 // Lazy load heavy components to avoid module-level crashes
 import dynamic from "next/dynamic"
@@ -40,6 +41,7 @@ type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-g
 
 export default function Page() {
   const { isAuthenticated, isLoading: isAuthLoading, user, profile, signOut } = useAuth()
+  const [showSplash, setShowSplash] = useState(!isAuthenticated)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
 
@@ -114,12 +116,25 @@ export default function Page() {
       })
     }
 
+    // Check if this is a new user (just signed up)
+    const isNewUser = localStorage.getItem('chase_just_signed_up') === 'true'
+    
     const welcomeTimer = setTimeout(() => {
-      toast({
-        title: `Welcome back, ${getUserFirstName()}!`,
-        description: "Your accounts are up to date.",
-        duration: 3000,
-      })
+      if (isNewUser) {
+        toast({
+          title: `Welcome to Chase, ${getUserFirstName()}!`,
+          description: "Your checking account is ready to use. Get started with zero balance.",
+          duration: 4000,
+        })
+        // Clear the flag after showing the welcome message
+        localStorage.removeItem('chase_just_signed_up')
+      } else {
+        toast({
+          title: `Welcome back, ${getUserFirstName()}!`,
+          description: "Your accounts are up to date.",
+          duration: 3000,
+        })
+      }
     }, 1500)
 
     return () => {
@@ -128,8 +143,9 @@ export default function Page() {
   }, [isAuthenticated, addActivity, addLoginHistory, toast, getUserFirstName])
 
   const handleLogin = () => {
-    // Auth is now handled by AuthContext - this is kept for LoginPage compatibility
-    // The user will be redirected after successful Supabase auth
+    // Refresh the page to pick up the new authentication state from localStorage
+    // The AuthContext will re-initialize with the logged-in user data
+    window.location.reload()
   }
 
   const handleLogout = async () => {
@@ -273,22 +289,19 @@ export default function Page() {
     }
   }
 
-  // Show loading state while checking auth
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#0a4fa6]/5 to-white">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-[#0a4fa6] animate-spin" />
-          <p className="text-gray-600 font-medium">
-            Initializing...
-          </p>
-          <p className="text-xs text-gray-400">Please wait while we prepare everything</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
+  // Show login page if not authenticated
+  if (!isAuthenticated && !isAuthLoading) {
+    if (showSplash) {
+      return (
+        <>
+          <ChaseSplashScreen 
+            onComplete={() => setShowSplash(false)}
+            duration={2500}
+          />
+          <LoginPage onLogin={handleLogin} />
+        </>
+      )
+    }
     return <LoginPage onLogin={handleLogin} />
   }
 

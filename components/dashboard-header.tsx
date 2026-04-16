@@ -374,6 +374,11 @@ export function DashboardHeader() {
 
             {/* Quick Actions */}
             <div className="space-y-2">
+              <a href="/guides">
+                <Button variant="outline" className="w-full justify-start h-12 bg-transparent">
+                  Guides & Resources
+                </Button>
+              </a>
               <Button variant="outline" className="w-full justify-start h-12 bg-transparent">
                 Account Settings
               </Button>

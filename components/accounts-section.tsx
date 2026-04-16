@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useBanking } from "@/lib/banking-context"
 import { useState } from "react"
+import { formatAccountNumberDisplay } from "@/lib/utils"
 
 interface AccountsSectionProps {
   onViewAccount: () => void
@@ -21,14 +22,23 @@ export function AccountsSection({
 }: AccountsSectionProps) {
   const { accounts, transactions } = useBanking()
   const [showBalances, setShowBalances] = useState(true)
-  const totalBalance = accounts.reduce((acc, curr) => acc + (curr.balance || 0), 0)
+  // Calculate total balance across all accounts, defaulting to 0 for new accounts
+  const totalBalance = accounts && accounts.length > 0 
+    ? accounts.reduce((acc, curr) => acc + ((curr.balance ?? 0) || 0), 0)
+    : 0
+
+  // Get transactions that are not tied to a specific account (or show all)
+  // For new accounts with zero balance, they won't have any transactions
+  const hasTransactions = transactions && transactions.length > 0
 
   // Get recent transactions for display (sorted by date)
-  const recentTransactions = [...transactions]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5)
+  const recentTransactions = hasTransactions
+    ? [...transactions]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5)
+    : []
 
-  const pendingCount = transactions.filter((tx) => tx.status === "pending").length
+  const pendingCount = hasTransactions ? transactions.filter((tx) => tx.status === "pending").length : 0
 
   const formatBalance = (balance?: number) => {
     if (!showBalances) return "••••••"
@@ -107,13 +117,13 @@ export function AccountsSection({
             >
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {account.name}
+                  {account.name || account.account_type || 'Account'}
                 </span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
-                  {account.id === "1" ? account.accountNumber : `...${account.accountNumber}`}
+                  {account.account_number ? formatAccountNumberDisplay(account.account_number) : 'Account'}
                 </span>
                 <div className="text-right">
                   <span className="text-xl font-bold">
@@ -180,7 +190,10 @@ export function AccountsSection({
                 </button>
               ))
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No recent transactions</p>
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">No recent transactions</p>
+                <p className="text-xs text-muted-foreground mt-1">Transactions will appear here when you make payments or receive deposits</p>
+              </div>
             )}
           </div>
         </CardContent>

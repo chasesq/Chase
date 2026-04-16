@@ -53,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-background">
       <body className="font-sans antialiased overflow-x-hidden overscroll-none touch-pan-y">
         <ErrorBoundary>
           <AuthProvider>
