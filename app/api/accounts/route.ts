@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
       lastSync: new Date().toISOString()
     })
   }
+}
 
 // POST /api/accounts - Create new account or link external account
 export async function POST(request: NextRequest) {
