@@ -37,25 +37,28 @@ async function seed() {
     await db.collection("accounts").deleteMany({})
     await db.collection("transactions").deleteMany({})
 
-    // Insert sample users
-    console.log("👤 Creating sample users...")
+    // Insert sample users with roles
+    console.log("Creating sample users...")
     const users = [
       {
         username: "ben",
         password: bcrypt.hashSync("1234", 10),
         email: "ben@example.com",
+        role: "admin", // Admin user
         createdAt: new Date(),
       },
       {
         username: "alice",
         password: bcrypt.hashSync("5678", 10),
         email: "alice@example.com",
+        role: "user", // Regular user
         createdAt: new Date(),
       },
       {
         username: "demo",
         password: bcrypt.hashSync("demo123", 10),
         email: "demo@example.com",
+        role: "user", // Regular user
         createdAt: new Date(),
       },
     ]
@@ -149,12 +152,12 @@ async function seed() {
     await db.collection("transactions").createIndex({ fromUserId: 1, date: -1 })
     await db.collection("transactions").createIndex({ toUserId: 1, date: -1 })
 
-    console.log("✅ Database seeded successfully!")
+    console.log("Database seeded successfully!")
     console.log("")
-    console.log("📋 Test Accounts:")
-    console.log("   Username: ben    | Password: 1234    | Balance: $5,000")
-    console.log("   Username: alice  | Password: 5678    | Balance: $3,000")
-    console.log("   Username: demo   | Password: demo123 | Balance: $10,000")
+    console.log("Test Accounts:")
+    console.log("   Username: ben    | Password: 1234    | Balance: $5,000 | Role: ADMIN")
+    console.log("   Username: alice  | Password: 5678    | Balance: $3,000 | Role: user")
+    console.log("   Username: demo   | Password: demo123 | Balance: $10,000 | Role: user")
   } catch (error) {
     console.error("❌ Error seeding database:", error)
     process.exit(1)

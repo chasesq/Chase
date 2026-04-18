@@ -5,26 +5,61 @@ import { NextRequest, NextResponse } from "next/server"
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "your-refresh-secret"
 
+export type UserRole = "user" | "admin"
+
 export interface TokenPayload {
   id: string
   username: string
+  role: UserRole
   iat?: number
   exp?: number
 }
 
 // Generate access and refresh tokens
-export function generateTokens(userId: string, username: string) {
+export function generateTokens(userId: string, username: string, role: UserRole = "user") {
   const accessToken = jwt.sign(
-    { id: userId, username },
+    { id: userId, username, role },
     JWT_SECRET,
     { expiresIn: "15m" }
   )
   const refreshToken = jwt.sign(
-    { id: userId, username },
+    { id: userId, username, role },
     REFRESH_SECRET,
     { expiresIn: "30d" }
   )
   return { accessToken, refreshToken }
+}
+
+// Check if user has required role
+export function hasRole(user: TokenPayload | null, requiredRole: UserRole): boolean {
+  if (!user) return false
+  if (requiredRole === "user") return true
+  return user.role === requiredRole
+}
+
+// Middleware helper to protect admin routes
+export function withAdminAuth(
+  handler: (
+    request: NextRequest,
+    user: TokenPayload
+  ) => Promise<NextResponse> | NextResponse
+) {
+  return async (request: NextRequest) => {
+    const user = verifyAccessToken(request)
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+    if (user.role !== "admin") {
+      return NextResponse.json(
+        { success: false, message: "Forbidden: Admins only" },
+        { status: 403 }
+      )
+    }
+    return handler(request, user)
+  }
 }
 
 // Set auth cookies on response

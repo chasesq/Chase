@@ -27,12 +27,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new user with hashed password
+    // Create new user with hashed password and default role
     const hashedPassword = bcrypt.hashSync(password, 10)
     const newUser = {
       username,
       password: hashedPassword,
       email,
+      role: "user" as const,
       createdAt: new Date(),
     }
     const userResult = await db.collection("users").insertOne(newUser)
@@ -57,8 +58,8 @@ export async function POST(request: NextRequest) {
       date: new Date(),
     })
 
-    // Generate tokens for auto-login
-    const tokens = generateTokens(userResult.insertedId.toString(), username)
+    // Generate tokens for auto-login (new users get "user" role)
+    const tokens = generateTokens(userResult.insertedId.toString(), username, "user")
 
     // Create response with user data
     const response = NextResponse.json({
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
         id: userResult.insertedId.toString(),
         username,
         email,
+        role: "user",
       },
     })
 

@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate tokens
-    const tokens = generateTokens(user._id.toString(), username)
+    // Generate tokens with role
+    const tokens = generateTokens(user._id.toString(), username, user.role || "user")
 
     // Create response with user data
     const response = NextResponse.json({
@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
         id: user._id.toString(),
         username: user.username,
         email: user.email,
+        role: user.role || "user",
       },
     })
 
