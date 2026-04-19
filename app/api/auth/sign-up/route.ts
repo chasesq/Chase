@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const {
+      // Supabase user ID for authenticated signups
+      supabase_user_id,
       // Basic fields from simple sign-up form
       name,
       email,
@@ -32,59 +34,65 @@ export async function POST(request: NextRequest) {
     const userPhone = phone_number || phone || ''
     const userEmail = email?.toLowerCase().trim()
 
-    // Validate required fields
-    if (!userEmail || !password) {
-      console.error('[v0] Missing required fields: email or password')
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 },
-      )
-    }
+    // For Supabase-authenticated signups, skip password validation
+    if (!supabase_user_id) {
+      // Validate required fields for traditional signup
+      if (!userEmail || !password) {
+        console.error('[v0] Missing required fields: email or password')
+        return NextResponse.json(
+          { error: 'Email and password are required' },
+          { status: 400 },
+        )
+      }
 
-    // Email validation
-    if (!validateEmail(userEmail)) {
-      console.error('[v0] Invalid email format:', userEmail)
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 },
-      )
-    }
+      // Email validation
+      if (!validateEmail(userEmail)) {
+        console.error('[v0] Invalid email format:', userEmail)
+        return NextResponse.json(
+          { error: 'Invalid email format' },
+          { status: 400 },
+        )
+      }
 
-    // Password validation
-    const passwordValidation = validatePassword(password)
-    if (!passwordValidation.valid) {
-      console.error('[v0] Password validation failed:', passwordValidation.errors)
-      return NextResponse.json(
-        { 
-          error: 'Password requirements not met',
-          details: passwordValidation.errors 
-        },
-        { status: 400 },
-      )
-    }
+      // Password validation
+      const passwordValidation = validatePassword(password)
+      if (!passwordValidation.valid) {
+        console.error('[v0] Password validation failed:', passwordValidation.errors)
+        return NextResponse.json(
+          { 
+            error: 'Password requirements not met',
+            details: passwordValidation.errors 
+          },
+          { status: 400 },
+        )
+      }
 
-    // Check if user already exists
-    const existingUser = await getUserByEmail(userEmail)
-    if (existingUser) {
-      console.error('[v0] User already exists:', userEmail)
-      return NextResponse.json(
-        { error: 'An account with this email already exists' },
-        { status: 409 },
-      )
+      // Check if user already exists
+      const existingUser = await getUserByEmail(userEmail)
+      if (existingUser) {
+        console.error('[v0] User already exists:', userEmail)
+        return NextResponse.json(
+          { error: 'An account with this email already exists' },
+          { status: 409 },
+        )
+      }
     }
-
-    // Hash password
-    const passwordHash = await hashPassword(password)
 
     // Build address if provided
     const address = street && city && state && zipCode 
       ? `${street}, ${city}, ${state} ${zipCode}` 
       : null
 
+    // Hash password for traditional signups (Supabase auth handles password for Supabase signups)
+    let passwordHash = null
+    if (!supabase_user_id && password) {
+      passwordHash = await hashPassword(password)
+    }
+
     // Create user in database
     const newUser = await createUser({
       email: userEmail,
-      password_hash: passwordHash,
+      password_hash: passwordHash || '',
       full_name: fullName || null,
       phone: userPhone || null,
       address: address || null,

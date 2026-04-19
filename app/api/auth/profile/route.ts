@@ -1,28 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserById, updateUser } from '@/lib/db'
+import { getUserById, getUserByEmail } from '@/lib/db'
+import { supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get('userId')
+    // Get user ID or email from query params
+    let userId = request.nextUrl.searchParams.get('userId')
     const email = request.nextUrl.searchParams.get('email')
 
+    // If no userId provided, try to get from Supabase session
     if (!userId && !email) {
-      return NextResponse.json(
-        { error: 'User ID or email is required' },
-        { status: 400 }
-      )
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.email) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        )
+      }
+      
+      // Get user by Supabase email
+      const userByEmail = await getUserByEmail(session.user.email)
+      if (!userByEmail) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        )
+      }
+      userId = userByEmail.id
     }
 
-    // TODO: Implement getUserByEmail in db.ts if needed
-    // For now, we'll use userId from localStorage
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      )
+    let user
+    if (userId) {
+      user = await getUserById(userId)
+    } else if (email) {
+      user = await getUserByEmail(email)
     }
-
-    const user = await getUserById(userId)
 
     if (!user) {
       return NextResponse.json(
@@ -32,19 +44,21 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name || '',
-      phone: user.phone || '',
-      address: user.address || '',
-      date_of_birth: user.date_of_birth || null,
-      government_id_type: user.government_id_type || '',
-      account_type_preference: user.account_type_preference || '',
-      currency_preference: user.currency_preference || 'USD',
-      language_preference: user.language_preference || 'en',
-      role: user.role || 'user',
-      created_at: user.created_at,
-      updated_at: user.updated_at,
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        date_of_birth: user.date_of_birth || null,
+        government_id_type: user.government_id_type || '',
+        account_type_preference: user.account_type_preference || '',
+        currency_preference: user.currency_preference || 'USD',
+        language_preference: user.language_preference || 'en',
+        role: user.role || 'user',
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      },
     })
   } catch (error) {
     console.error('[Neon] Profile GET error:', error)

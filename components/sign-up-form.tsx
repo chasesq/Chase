@@ -49,40 +49,24 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
     }
 
     try {
-      const response = await fetch('/api/auth/sign-up', {
+      // Use auth context to handle Supabase signup
+      const { error: authError, user } = await fetch('/api/auth/sign-up', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: `${firstName} ${lastName}`.trim(),
           email,
           password,
+          name: `${firstName} ${lastName}`.trim(),
           phone_number: phone,
         }),
-      })
+      }).then(res => res.json())
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Sign up failed')
+      if (authError) {
+        throw new Error(authError.error || 'Sign up failed')
       }
 
-      // Store user profile data and set logged-in flag
-      if (data.user) {
-        const userProfile = {
-          ...data.user,
-          email: email,
-        }
-        localStorage.setItem('user_profile', JSON.stringify(userProfile))
-        localStorage.setItem('chase_logged_in', 'true')
-        localStorage.setItem('userEmail', email)
-        localStorage.setItem('userId', data.user.id)
-        localStorage.setItem('userName', data.user.full_name || `${firstName} ${lastName}`.trim())
-        // Flag to show welcome message for new users
-        localStorage.setItem('chase_just_signed_up', 'true')
-      }
-
-      // Redirect to home dashboard on success (session is created server-side)
-      // Use replace to prevent back button going to sign-up
+      // Redirect to home dashboard on success
+      // Supabase session is handled automatically
       router.replace('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during sign up')

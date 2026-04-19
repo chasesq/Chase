@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 import { hasPermission, isAdminRole, type UserRole } from "@/lib/auth/roles"
+import { supabase } from "@/lib/supabase"
 
 export interface UserProfile {
   id: string
@@ -43,28 +44,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from Supabase
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       try {
-        // Check if user is logged in by checking localStorage
-        const isLoggedIn = localStorage.getItem("chase_logged_in") === "true"
-        const userProfileStr = localStorage.getItem("user_profile")
+        // Check Supabase session
+        const { data: { session } } = await supabase.auth.getSession()
 
-        if (isLoggedIn && userProfileStr) {
-          try {
-            const userProfileData = JSON.parse(userProfileStr) as UserProfile
-            setUser(userProfileData)
-            setProfile(userProfileData)
-            console.log("[AuthContext] User authenticated from localStorage:", userProfileData.email)
-          } catch (err) {
-            console.error("[AuthContext] Error parsing user profile:", err)
-            // Clear invalid data
-            localStorage.removeItem("user_profile")
-            localStorage.removeItem("chase_logged_in")
+        if (session?.user) {
+          // Fetch user profile from Neon via API
+          const response = await fetch('/api/auth/profile', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.user) {
+              setUser(data.user)
+              setProfile(data.user)
+              console.log("[AuthContext] User authenticated from Supabase:", data.user.email)
+            }
           }
         } else {
-          console.log("[AuthContext] No user session found in localStorage")
+          console.log("[AuthContext] No Supabase session found")
         }
       } catch (err) {
         console.error("[AuthContext] Error initializing auth:", err)
@@ -73,32 +76,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Use synchronous initialization to avoid race conditions
     initAuth()
   }, [])
 
   // Sign in with email and password
   const signIn = useCallback(async (email: string, password: string) => {
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+      // Sign in with Supabase
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        return { error: new Error(data.error || "Sign in failed") }
+      if (authError) {
+        return { error: new Error(authError.message || "Sign in failed") }
       }
 
-      // Update auth state
       if (data.user) {
-        setUser(data.user)
-        setProfile(data.user)
-        localStorage.setItem("user_profile", JSON.stringify(data.user))
-        localStorage.setItem("chase_logged_in", "true")
-        localStorage.setItem("userEmail", email)
+        // Fetch user profile from Neon
+        const response = await fetch('/api/auth/profile', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
+
+        if (response.ok) {
+          const userData = await response.json()
+          if (userData.user) {
+            setUser(userData.user)
+            setProfile(userData.user)
+          }
+        }
       }
 
       return { error: null }
@@ -114,34 +121,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     metadata?: { full_name?: string; phone?: string }
   ) => {
     try {
-      // Use the sign-up API endpoint
-      const response = await fetch("/api/auth/sign-up", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          name: metadata?.full_name || "",
-          phone_number: metadata?.phone || "",
-        }),
+      // Sign up with Supabase
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: metadata?.full_name,
+            phone: metadata?.phone,
+          },
+        },
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        return { error: new Error(data.error || "Sign up failed"), user: null }
+      if (authError) {
+        return { error: new Error(authError.message || "Sign up failed"), user: null }
       }
 
-      // Update auth state
       if (data.user) {
-        setUser(data.user)
-        setProfile(data.user)
-        localStorage.setItem("user_profile", JSON.stringify(data.user))
-        localStorage.setItem("chase_logged_in", "true")
-        localStorage.setItem("userEmail", email)
+        // Create user profile in Neon via API
+        const response = await fetch("/api/auth/sign-up", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            supabase_user_id: data.user.id,
+            email: data.user.email,
+            name: metadata?.full_name || "",
+            phone_number: metadata?.phone || "",
+          }),
+        })
+
+        const responseData = await response.json()
+
+        if (!response.ok) {
+          return { error: new Error(responseData.error || "Sign up failed"), user: null }
+        }
+
+        // Update auth state
+        if (responseData.user) {
+          setUser(responseData.user)
+          setProfile(responseData.user)
+        }
+
+        return { error: null, user: responseData.user }
       }
 
-      return { error: null, user: data.user }
+      return { error: null, user: null }
     } catch (err) {
       return { 
         error: err instanceof Error ? err : new Error("Sign up failed"), 
@@ -152,26 +176,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign out
   const signOut = useCallback(async () => {
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+    } catch (err) {
+      console.error("[AuthContext] Error signing out:", err)
+    }
+
     setUser(null)
     setProfile(null)
-    
-    // Clear localStorage
-    localStorage.removeItem("user_profile")
-    localStorage.removeItem("chase_logged_in")
-    localStorage.removeItem("chase_user_id")
-    localStorage.removeItem("userEmail")
   }, [])
 
-  // Refresh profile data from localStorage
+  // Refresh profile data from Neon
   const refreshProfile = useCallback(async () => {
-    const userProfileStr = localStorage.getItem("user_profile")
-    if (userProfileStr) {
-      try {
-        const profileData = JSON.parse(userProfileStr) as UserProfile
-        setProfile(profileData)
-      } catch (err) {
-        console.error("[AuthContext] Error parsing profile:", err)
+    try {
+      const response = await fetch('/api/auth/profile', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.user) {
+          setProfile(data.user)
+        }
       }
+    } catch (err) {
+      console.error("[AuthContext] Error refreshing profile:", err)
     }
   }, [])
 
