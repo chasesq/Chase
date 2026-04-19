@@ -14,14 +14,9 @@ function getSql(): NeonQueryFunction<false, false> {
   return sqlInstance
 }
 
-export const sql = new Proxy({} as NeonQueryFunction<false, false>, {
-  get: (target, prop) => {
-    return (getSql() as any)[prop]
-  },
-  apply: (target, thisArg, args) => {
-    return getSql()(...args)
-  },
-})
+export function sql(strings: TemplateStringsArray, ...values: any[]): any {
+  return getSql()(strings, ...values)
+}
 
 // User operations
 export async function getUserByEmail(email: string) {
@@ -103,7 +98,7 @@ export async function updateUser(id: string, data: Partial<{
     RETURNING *
   `
   
-  const result = await sql(query, values)
+  const result = await getSql()(query, values)
   return result[0]
 }
 
