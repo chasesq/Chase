@@ -7,12 +7,44 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let supabaseClient: ReturnType<typeof createClient> | null = null
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getSupabase() {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+    supabaseClient = createClient(supabaseUrl, supabaseKey)
+  }
+  return supabaseClient
+}
+
+const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get: (target, prop) => {
+    return (getSupabase() as any)[prop]
+  },
+})
+
+let resendInstance: Resend | null = null
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    resendInstance = new Resend(apiKey)
+  }
+  return resendInstance
+}
+
+const resend = new Proxy({} as Resend, {
+  get: (target, prop) => {
+    return (getResend() as any)[prop]
+  },
+})
 
 export async function GET(request: NextRequest) {
   try {

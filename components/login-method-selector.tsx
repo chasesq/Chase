@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Mail, Lock, Smartphone } from 'lucide-react'
-import { SignInForm } from '@/components/sign-in-form'
 import { PasswordlessForm } from '@/components/passwordless-form'
 import { ACULLoginId } from '@/components/acul-login-id'
 
 export function LoginMethodSelector({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
-  const [activeMethod, setActiveMethod] = useState<'password' | 'passwordless' | 'acul'>('password')
+  const [activeMethod, setActiveMethod] = useState<'passwordless' | 'acul'>('passwordless')
 
   const handleACULSuccess = (response: any) => {
     console.log('[Login] ACUL success:', response)
@@ -33,11 +32,7 @@ export function LoginMethodSelector({ className, ...props }: React.ComponentProp
         </CardHeader>
         <CardContent>
           <Tabs value={activeMethod} onValueChange={(value) => setActiveMethod(value as any)}>
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="password" className="flex items-center gap-2">
-                <Lock className="h-4 w-4" />
-                <span className="hidden sm:inline">Password</span>
-              </TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="passwordless" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 <span className="hidden sm:inline">OTP</span>
@@ -48,18 +43,7 @@ export function LoginMethodSelector({ className, ...props }: React.ComponentProp
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="password" className="space-y-4">
-              <div className="text-sm text-muted-foreground mb-4">
-                Sign in with your email and password.
-              </div>
-              {typeof SignInForm !== 'undefined' ? (
-                <SignInForm />
-              ) : (
-                <div className="text-center text-sm text-muted-foreground p-4">
-                  Sign in form component not available
-                </div>
-              )}
-            </TabsContent>
+
 
             <TabsContent value="passwordless" className="space-y-4">
               <div className="text-sm text-muted-foreground mb-4">

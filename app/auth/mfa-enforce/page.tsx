@@ -5,9 +5,11 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle, Shield, CheckCircle2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 
-export default function MFAEnforcePage() {
+export const dynamic = 'force-dynamic'
+
+function MFAEnforceContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [step, setStep] = useState<'intro' | 'method' | 'complete'>('intro')
@@ -152,5 +154,13 @@ export default function MFAEnforcePage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function MFAEnforcePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MFAEnforceContent />
+    </Suspense>
   )
 }

@@ -1,12 +1,27 @@
 import { neon } from '@neondatabase/serverless'
+import type { NeonQueryFunction } from '@neondatabase/serverless'
 
-const DATABASE_URL = process.env.DATABASE_URL
+let sqlInstance: NeonQueryFunction<false, false> | null = null
 
-if (!DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not set')
+function getSql(): NeonQueryFunction<false, false> {
+  if (!sqlInstance) {
+    const DATABASE_URL = process.env.DATABASE_URL
+    if (!DATABASE_URL) {
+      throw new Error('DATABASE_URL environment variable is not set')
+    }
+    sqlInstance = neon(DATABASE_URL)
+  }
+  return sqlInstance
 }
 
-export const sql = neon(DATABASE_URL)
+export const sql = new Proxy({} as NeonQueryFunction<false, false>, {
+  get: (target, prop) => {
+    return (getSql() as any)[prop]
+  },
+  apply: (target, thisArg, args) => {
+    return getSql()(...args)
+  },
+})
 
 // User operations
 export async function getUserByEmail(email: string) {

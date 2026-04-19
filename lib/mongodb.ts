@@ -1,40 +1,45 @@
-import { MongoClient, Db } from "mongodb"
+import { MongoClient, Db, Document } from "mongodb"
 
-if (!process.env.MONGODB_URI) {
-  throw new Error("MONGODB_URI environment variable is not set")
-}
-
-const uri = process.env.MONGODB_URI
-const options = {}
-
-let client: MongoClient
-let clientPromise: Promise<MongoClient>
+let client: MongoClient | null = null
+let clientPromise: Promise<MongoClient> | null = null
 
 // In development mode, use a global variable so that the value
 // is preserved across module reloads caused by HMR (Hot Module Replacement).
-// In production, it's best to not use a global variable.
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined
 }
 
-if (process.env.NODE_ENV === "development") {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options)
-    global._mongoClientPromise = client.connect()
+function getClientPromise(): Promise<MongoClient> {
+  const uri = process.env.MONGODB_URI
+  
+  if (!uri) {
+    throw new Error("MONGODB_URI environment variable is not set")
   }
-  clientPromise = global._mongoClientPromise
-} else {
-  client = new MongoClient(uri, options)
-  clientPromise = client.connect()
+
+  if (process.env.NODE_ENV === "development") {
+    if (!global._mongoClientPromise) {
+      client = new MongoClient(uri, {})
+      global._mongoClientPromise = client.connect()
+    }
+    return global._mongoClientPromise
+  } else {
+    if (!clientPromise) {
+      client = new MongoClient(uri, {})
+      clientPromise = client.connect()
+    }
+    return clientPromise
+  }
 }
 
-// Export a module-scoped MongoClient promise
-export default clientPromise
+// Export a lazy-loading module promise
+export default function getConnection(): Promise<MongoClient> {
+  return getClientPromise()
+}
 
 // Helper to get the database directly
 export async function getDatabase(dbName: string = "mybank"): Promise<Db> {
-  const client = await clientPromise
-  return client.db(dbName)
+  const mongoClient = await getClientPromise()
+  return mongoClient.db(dbName)
 }
 
 // Helper to get a collection directly
