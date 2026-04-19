@@ -45,27 +45,17 @@ export async function createUser(data: {
     INSERT INTO users (
       email,
       password_hash,
-      full_name,
+      name,
       phone,
-      address,
-      date_of_birth,
-      government_id_type,
-      account_type_preference,
-      currency_preference,
-      language_preference
+      role
     ) VALUES (
       ${data.email},
       ${data.password_hash},
-      ${data.full_name || null},
+      ${data.full_name || data.email.split('@')[0]},
       ${data.phone || null},
-      ${data.address || null},
-      ${data.date_of_birth || null},
-      ${data.government_id_type || null},
-      ${data.account_type_preference || null},
-      ${data.currency_preference || 'USD'},
-      ${data.language_preference || 'en'}
+      'customer'
     )
-    RETURNING id, email, full_name, phone, created_at
+    RETURNING id, email, name as full_name, phone, created_at, role
   `
   return result[0]
 }
@@ -105,7 +95,7 @@ export async function updateUser(id: string, data: Partial<{
 // Session operations
 export async function createSession(userId: string, token: string, expiresAt: Date) {
   const result = await sql`
-    INSERT INTO sessions (user_id, token, expires_at)
+    INSERT INTO neon_auth.sessions (user_id, token, expires_at)
     VALUES (${userId}, ${token}, ${expiresAt.toISOString()})
     RETURNING id, user_id, token, expires_at
   `
@@ -114,8 +104,9 @@ export async function createSession(userId: string, token: string, expiresAt: Da
 
 export async function getSession(token: string) {
   const result = await sql`
-    SELECT s.*, u.id as user_id, u.email, u.full_name, u.role
-    FROM sessions s
+    SELECT s.id, s.user_id, s.token, s.expires_at, 
+           u.id as user_id, u.email, u.name as full_name, u.role
+    FROM neon_auth.sessions s
     JOIN users u ON s.user_id = u.id
     WHERE s.token = ${token} AND s.expires_at > CURRENT_TIMESTAMP
   `
@@ -131,7 +122,7 @@ export async function getUserRole(userId: string): Promise<'customer' | 'admin' 
 export async function updateUserRole(userId: string, role: 'customer' | 'admin') {
   const result = await sql`
     UPDATE users
-    SET role = ${role}, updated_at = CURRENT_TIMESTAMP
+    SET role = ${role}
     WHERE id = ${userId}
     RETURNING id, email, role
   `
@@ -216,15 +207,15 @@ export async function getAccountById(accountId: string) {
 }
 
 export async function createAccount(userId: string, data: {
-  account_type: string
-  account_number: string
+  account_type?: string
+  account_number?: string
   balance?: number
   currency?: string
 }) {
   const result = await sql`
-    INSERT INTO accounts (user_id, account_type, account_number, balance, currency)
-    VALUES (${userId}, ${data.account_type}, ${data.account_number}, ${data.balance || 0}, ${data.currency || 'USD'})
-    RETURNING *
+    INSERT INTO accounts (user_id, name, account_type, account_number, balance)
+    VALUES (${userId}, ${data.account_type || 'Checking Account'}, ${data.account_type || 'checking'}, ${data.account_number || null}, ${data.balance || 0})
+    RETURNING id, user_id, name, account_type, account_number, balance
   `
   return result[0]
 }
