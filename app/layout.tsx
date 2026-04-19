@@ -9,6 +9,7 @@ import { RealtimeProvider } from "@/lib/realtime-orchestrator"
 import { ACULProvider } from "@/lib/auth0/acul-context"
 import { AuthProvider } from "@/lib/auth-context"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { PWAProvider } from "@/components/pwa-provider"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -17,17 +18,39 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] })
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
   minimumScale: 1,
-  userScalable: false,
+  userScalable: true,
   viewportFit: "cover",
-  themeColor: "#0a4fa6",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0a4fa6" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a4fa6" },
+  ],
 }
 
 export const metadata: Metadata = {
-  title: "Enterprise Financial System",
-  description: "Integrated financial management with real-time updates",
+  title: "MyBank - Chase Banking",
+  description:
+    "Your personal banking app. Manage accounts, transfer funds, pay bills, and track finances on the go.",
   generator: "v0.app",
+  applicationName: "MyBank",
+  keywords: ["banking", "finance", "chase", "transfer", "bills", "savings"],
+  authors: [{ name: "MyBank" }],
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "MyBank",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "MyBank",
+    title: "MyBank - Your Banking App",
+    description: "Manage your finances anywhere, anytime.",
+  },
   icons: {
     icon: [
       {
@@ -42,8 +65,15 @@ export const metadata: Metadata = {
         url: "/icon.svg",
         type: "image/svg+xml",
       },
+      {
+        url: "/icon-512.jpg",
+        sizes: "512x512",
+        type: "image/jpeg",
+      },
     ],
-    apple: "/apple-icon.png",
+    apple: [
+      { url: "/apple-icon.jpg", sizes: "180x180", type: "image/jpeg" },
+    ],
   },
 }
 
@@ -60,7 +90,9 @@ export default function RootLayout({
             <ACULProvider>
               <RealtimeProvider>
                 <BankingProvider>
-                  {children}
+                  <PWAProvider>
+                    {children}
+                  </PWAProvider>
                   <Toaster />
                   <Analytics />
                   <SpeedInsights />
