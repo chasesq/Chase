@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       address: user.address || null,
       currency_preference: user.currency_preference || 'USD',
       language_preference: user.language_preference || 'en',
-      role: user.role || 'user',
+      role: (user as any).role || 'customer',
       account_number: `ACC-${user.id.substring(0, 8).toUpperCase()}`,
       balance: 0,
     }

@@ -20,13 +20,17 @@ export function sql(strings: TemplateStringsArray, ...values: any[]): any {
 
 // User operations
 export async function getUserByEmail(email: string) {
-  const result = await sql`SELECT * FROM users WHERE email = ${email}`
-  return result[0] || null
-}
-
-export async function getUserById(id: string) {
-  const result = await sql`SELECT * FROM users WHERE id = ${id}`
-  return result[0] || null
+  try {
+    const result = await sql`
+      SELECT u.id, u.email, u.name as full_name, u."createdAt"
+      FROM neon_auth."user" u
+      WHERE u.email = ${email}
+    `
+    return result[0] || null
+  } catch (error: any) {
+    console.log('[v0] getUserByEmail error:', error.message)
+    return null
+  }
 }
 
 export async function createUser(data: {
@@ -41,33 +45,53 @@ export async function createUser(data: {
   currency_preference?: string
   language_preference?: string
 }) {
-  const result = await sql`
-    INSERT INTO users (
-      email,
-      password_hash,
-      full_name,
-      phone,
-      address,
-      date_of_birth,
-      government_id_type,
-      account_type_preference,
-      currency_preference,
-      language_preference
-    ) VALUES (
-      ${data.email},
-      ${data.password_hash},
-      ${data.full_name || null},
-      ${data.phone || null},
-      ${data.address || null},
-      ${data.date_of_birth || null},
-      ${data.government_id_type || null},
-      ${data.account_type_preference || null},
-      ${data.currency_preference || 'USD'},
-      ${data.language_preference || 'en'}
-    )
-    RETURNING id, email, full_name, phone, created_at
-  `
-  return result[0]
+  try {
+    // First insert the user in neon_auth schema
+    const userResult = await sql`
+      INSERT INTO neon_auth."user" (
+        email,
+        name
+      ) VALUES (
+        ${data.email},
+        ${data.full_name || data.email.split('@')[0]}
+      )
+      RETURNING id, email, name as full_name, created_at
+    `
+    
+    const user = userResult[0]
+    
+    // Then insert credentials in neon_auth schema
+    if (user) {
+      await sql`
+        INSERT INTO neon_auth.credentials (
+          user_id,
+          password_hash
+        ) VALUES (
+          ${user.id},
+          ${data.password_hash}
+        )
+      `
+    }
+    
+    return user
+  } catch (error: any) {
+    console.log('[v0] createUser error:', error.message)
+    throw error
+  }
+}
+
+export async function getUserById(id: string) {
+  try {
+    const result = await sql`
+      SELECT id, email, name as full_name, created_at
+      FROM neon_auth."user"
+      WHERE id = ${id}
+    `
+    return result[0] || null
+  } catch (error: any) {
+    console.log('[v0] getUserById error:', error.message)
+    return null
+  }
 }
 
 export async function updateUser(id: string, data: Partial<{
@@ -104,22 +128,33 @@ export async function updateUser(id: string, data: Partial<{
 
 // Session operations
 export async function createSession(userId: string, token: string, expiresAt: Date) {
-  const result = await sql`
-    INSERT INTO sessions (user_id, token, expires_at)
-    VALUES (${userId}, ${token}, ${expiresAt.toISOString()})
-    RETURNING id, user_id, token, expires_at
-  `
-  return result[0]
+  try {
+    const result = await sql`
+      INSERT INTO neon_auth.session (user_id, token, expires_at)
+      VALUES (${userId}, ${token}, ${expiresAt.toISOString()})
+      RETURNING id, user_id, token, expires_at
+    `
+    return result[0]
+  } catch (error: any) {
+    console.log('[v0] createSession error:', error.message)
+    throw error
+  }
 }
 
 export async function getSession(token: string) {
-  const result = await sql`
-    SELECT s.*, u.id as user_id, u.email, u.full_name, u.role
-    FROM sessions s
-    JOIN users u ON s.user_id = u.id
-    WHERE s.token = ${token} AND s.expires_at > CURRENT_TIMESTAMP
-  `
-  return result[0] || null
+  try {
+    const result = await sql`
+      SELECT s.id, s.token, s.expires_at, 
+             u.id as user_id, u.email, u.name as full_name
+      FROM neon_auth.session s
+      JOIN neon_auth."user" u ON s.user_id = u.id
+      WHERE s.token = ${token} AND s.expires_at > CURRENT_TIMESTAMP
+    `
+    return result[0] || null
+  } catch (error: any) {
+    console.log('[v0] getSession error:', error.message)
+    return null
+  }
 }
 
 // Role-based operations
@@ -131,7 +166,7 @@ export async function getUserRole(userId: string): Promise<'customer' | 'admin' 
 export async function updateUserRole(userId: string, role: 'customer' | 'admin') {
   const result = await sql`
     UPDATE users
-    SET role = ${role}, updated_at = CURRENT_TIMESTAMP
+    SET role = ${role}
     WHERE id = ${userId}
     RETURNING id, email, role
   `
@@ -216,15 +251,15 @@ export async function getAccountById(accountId: string) {
 }
 
 export async function createAccount(userId: string, data: {
-  account_type: string
-  account_number: string
+  account_type?: string
+  account_number?: string
   balance?: number
   currency?: string
 }) {
   const result = await sql`
-    INSERT INTO accounts (user_id, account_type, account_number, balance, currency)
-    VALUES (${userId}, ${data.account_type}, ${data.account_number}, ${data.balance || 0}, ${data.currency || 'USD'})
-    RETURNING *
+    INSERT INTO accounts (user_id, name, account_type, account_number, balance)
+    VALUES (${userId}, ${data.account_type || 'Checking Account'}, ${data.account_type || 'checking'}, ${data.account_number || null}, ${data.balance || 0})
+    RETURNING id, user_id, name, account_type, account_number, balance
   `
   return result[0]
 }
