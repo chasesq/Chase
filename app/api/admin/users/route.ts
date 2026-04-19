@@ -52,6 +52,76 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    // Verify admin access
+    const adminVerification = verifyAdminAccess(request)
+    if (adminVerification.error) {
+      return adminVerification.error
+    }
+
+    const supabase = createServiceClient()
+    const { userId, role } = await request.json()
+
+    // Validate input
+    if (!userId || !['user', 'admin'].includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid userId or role. Role must be "user" or "admin"' },
+        { status: 400 }
+      )
+    }
+
+    // Prevent removing the last admin
+    if (role === 'user') {
+      const { data: admins, error: adminCountError } = await supabase
+        .from('users')
+        .select('id', { count: 'exact' })
+        .eq('role', 'admin')
+
+      if (admins && admins.length <= 1) {
+        return NextResponse.json(
+          { error: 'Cannot remove the last admin user' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Update user role
+    const { data: updatedUser, error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', userId)
+      .select('id, email, full_name, role')
+      .single()
+
+    if (error) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      )
+    }
+
+    if (!updatedUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `User role updated to ${role}`,
+      user: updatedUser,
+    })
+  } catch (error) {
+    console.error('[v0] Admin users PUT error:', error)
+    return NextResponse.json(
+      { error: 'Failed to update user role' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient()

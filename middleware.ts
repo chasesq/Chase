@@ -21,6 +21,35 @@ function verifyMongoToken(request: NextRequest): { id: string; username: string;
   }
 }
 
+// Extract role from Supabase session
+async function getSupabaseUserRole(supabase: any): Promise<string | null> {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session?.user) return null
+
+    // Try to get role from JWT custom claims (if configured in Supabase)
+    const role = (session.user as any)?.user_metadata?.role || (session.user as any)?.role
+
+    if (role) return role
+
+    // Fallback: Fetch user role from database
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('email', session.user.email)
+      .single()
+
+    if (error || !data) return null
+    return data.role
+  } catch (error) {
+    console.error('[middleware] Error getting Supabase user role:', error)
+    return null
+  }
+}
+
 export async function middleware(request: NextRequest) {
   try {
     const pathname = request.nextUrl.pathname
@@ -33,7 +62,8 @@ export async function middleware(request: NextRequest) {
 
     // Check for MongoDB JWT session first
     const mongoUser = verifyMongoToken(request)
-    let hasSupabaseSession = false
+    let supabaseSession: any = null
+    let supabaseUserRole: string | null = null
 
     // Check Supabase session if credentials are available
     if (supabaseUrl && supabaseAnonKey) {
@@ -58,11 +88,16 @@ export async function middleware(request: NextRequest) {
         data: { session },
       } = await supabase.auth.getSession()
 
-      hasSupabaseSession = !!session
+      supabaseSession = session
+      
+      // Get user role from Supabase
+      if (supabaseSession) {
+        supabaseUserRole = await getSupabaseUserRole(supabase)
+      }
     }
 
     // User is authenticated if either session exists
-    const isAuthenticated = mongoUser !== null || hasSupabaseSession
+    const isAuthenticated = mongoUser !== null || supabaseSession !== null
 
     // Auth routes (login, sign-up, etc.)
     const authRoutes = ['/auth/login', '/auth/sign-up', '/auth/forgot-password', '/auth/reset-password', '/auth/sign-up-success', '/auth/onboarding-success', '/auth/error']
@@ -76,13 +111,17 @@ export async function middleware(request: NextRequest) {
     const adminRoutes = ['/admin']
     const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route))
 
+    // User role (from MongoDB or Supabase)
+    const userRole = mongoUser?.role || supabaseUserRole || 'user'
+
     // Redirect unauthenticated users away from protected routes
     if (isProtectedRoute && !isAuthenticated) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    // Check admin access for MongoDB users
-    if (isAdminRoute && mongoUser && mongoUser.role !== 'admin') {
+    // Enforce admin-only routes (both MongoDB and Supabase)
+    if (isAdminRoute && isAuthenticated && userRole !== 'admin') {
+      console.log(`[middleware] Access denied for non-admin user. Role: ${userRole}`)
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
