@@ -1,7 +1,24 @@
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18',
+let stripeInstance: Stripe | null = null
+
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    const apiKey = process.env.STRIPE_SECRET_KEY
+    if (!apiKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set')
+    }
+    stripeInstance = new Stripe(apiKey, {
+      apiVersion: '2024-12-18',
+    })
+  }
+  return stripeInstance
+}
+
+const stripe = new Proxy({} as Stripe, {
+  get: (target, prop) => {
+    return (getStripe() as any)[prop]
+  },
 })
 
 /**

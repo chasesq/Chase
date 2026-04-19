@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { ACULMfaBeginEnrollOptions } from '@/components/acul-mfa-begin-enroll-options'
 
+export const dynamic = 'force-dynamic'
+
 function MFASetupContent() {
   const searchParams = useSearchParams()
   const router = useRouter()

@@ -5,8 +5,25 @@
 
 import { Resend } from 'resend';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend client lazily
+let resendInstance: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is not set');
+    }
+    resendInstance = new Resend(apiKey);
+  }
+  return resendInstance;
+}
+
+const resend = new Proxy({} as Resend, {
+  get: (target, prop) => {
+    return (getResend() as any)[prop];
+  },
+});
 
 export interface EmailResult {
   success: boolean;

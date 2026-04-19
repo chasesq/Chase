@@ -7,7 +7,25 @@ import { Resend } from "resend"
  */
 
 const ADMIN_EMAIL = "hungchun164@gmail.com"
-const resend = new Resend(process.env.RESEND_API_KEY)
+
+let resendInstance: Resend | null = null
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    resendInstance = new Resend(apiKey)
+  }
+  return resendInstance
+}
+
+const resend = new Proxy({} as Resend, {
+  get: (target, prop) => {
+    return (getResend() as any)[prop]
+  },
+})
 
 interface TokenEmailRequest {
   userEmail: string
