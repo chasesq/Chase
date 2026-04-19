@@ -14,14 +14,9 @@ function getSql(): NeonQueryFunction<false, false> {
   return sqlInstance
 }
 
-export const sql = new Proxy({} as NeonQueryFunction<false, false>, {
-  get: (target, prop) => {
-    return (getSql() as any)[prop]
-  },
-  apply: (target, thisArg, args) => {
-    return getSql()(...args)
-  },
-})
+export function sql(strings: TemplateStringsArray, ...values: any[]): any {
+  return getSql()(strings, ...values)
+}
 
 // User operations
 export async function getUserByEmail(email: string) {
@@ -103,7 +98,7 @@ export async function updateUser(id: string, data: Partial<{
     RETURNING *
   `
   
-  const result = await sql(query, values)
+  const result = await getSql()(query, values)
   return result[0]
 }
 
@@ -125,6 +120,76 @@ export async function getSession(token: string) {
     WHERE s.token = ${token} AND s.expires_at > CURRENT_TIMESTAMP
   `
   return result[0] || null
+}
+
+// Role-based operations
+export async function getUserRole(userId: string): Promise<'customer' | 'admin' | null> {
+  const result = await sql`SELECT role FROM users WHERE id = ${userId}`
+  return result[0]?.role || null
+}
+
+export async function updateUserRole(userId: string, role: 'customer' | 'admin') {
+  const result = await sql`
+    UPDATE users
+    SET role = ${role}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ${userId}
+    RETURNING id, email, role
+  `
+  return result[0] || null
+}
+
+export async function createAdminUser(data: {
+  email: string
+  password_hash: string
+  full_name?: string
+}) {
+  const result = await sql`
+    INSERT INTO users (
+      email,
+      password_hash,
+      full_name,
+      role,
+      currency_preference,
+      language_preference
+    ) VALUES (
+      ${data.email},
+      ${data.password_hash},
+      ${data.full_name || null},
+      'admin',
+      'USD',
+      'en'
+    )
+    RETURNING id, email, full_name, role, created_at
+  `
+  return result[0]
+}
+
+export async function getUserTotalBalance(userId: string): Promise<number> {
+  const result = await sql`
+    SELECT COALESCE(SUM(balance), 0) as total_balance
+    FROM accounts
+    WHERE user_id = ${userId}
+  `
+  return parseFloat(result[0]?.total_balance || '0')
+}
+
+export async function getAllUsersWithBalances() {
+  const result = await sql`
+    SELECT 
+      u.id,
+      u.email,
+      u.full_name,
+      u.role,
+      u.created_at,
+      COUNT(a.id) as account_count,
+      COALESCE(SUM(a.balance), 0) as total_balance
+    FROM users u
+    LEFT JOIN accounts a ON u.id = a.user_id
+    WHERE u.role = 'customer'
+    GROUP BY u.id, u.email, u.full_name, u.role, u.created_at
+    ORDER BY u.created_at DESC
+  `
+  return result
 }
 
 export async function deleteSession(token: string) {

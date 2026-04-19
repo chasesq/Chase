@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
       email: newUser.email,
       full_name: newUser.full_name,
       phone: userPhone,
+      role: 'customer', // Default role for new signups
       checking_account: checkingAccount ? {
         id: checkingAccount.id,
         account_number: checkingAccount.account_number,

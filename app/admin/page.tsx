@@ -47,12 +47,24 @@ export default function AdminDashboardPage() {
   )
 }
 
+interface UserWithBalance {
+  id: string
+  email: string
+  full_name: string | null
+  role: string
+  created_at: string
+  account_count: number
+  total_balance: number
+}
+
 function AdminDashboardContent() {
   const [newUsers, setNewUsers] = useState<NewUser[]>([])
+  const [usersWithBalances, setUsersWithBalances] = useState<UserWithBalance[]>([])
+  const [totalSystemBalance, setTotalSystemBalance] = useState(0)
   const [pendingTransfers, setPendingTransfers] = useState<AdminTransfer[]>([])
   const [transferHistory, setTransferHistory] = useState<AdminTransfer[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'new-users' | 'pending' | 'history' | 'financial-accounts' | 'payouts' | 'create-users' | 'issuing' | 'credit' | 'test-utilities'>('new-users')
+  const [activeTab, setActiveTab] = useState<'users-balances' | 'new-users' | 'pending' | 'history' | 'financial-accounts' | 'payouts' | 'create-users' | 'issuing' | 'credit' | 'test-utilities'>('users-balances')
   const supabase = createClient()
 
   // Fetch initial data
@@ -69,6 +81,18 @@ function AdminDashboardContent() {
         'Content-Type': 'application/json',
         'x-user-id': 'admin',
         'x-user-role': 'admin',
+      }
+
+      // Fetch users with balances
+      const balancesRes = await fetch('/api/admin/users-balances', {
+        method: 'GET',
+        headers: adminHeaders,
+      })
+
+      if (balancesRes.ok) {
+        const data = await balancesRes.json()
+        setUsersWithBalances(data.users || [])
+        setTotalSystemBalance(data.totalBalance || 0)
       }
 
       // Fetch all users with their accounts (not just 24h)
@@ -164,15 +188,27 @@ function AdminDashboardContent() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Total Users</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">{newUsers.length}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{usersWithBalances.length}</p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <span className="text-2xl">👥</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Total Balance</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">${totalSystemBalance.toFixed(2)}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <span className="text-2xl">💰</span>
               </div>
             </div>
           </div>
@@ -206,10 +242,20 @@ function AdminDashboardContent() {
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow mb-8">
-          <div className="flex border-b border-gray-200">
+          <div className="flex border-b border-gray-200 overflow-x-auto">
+            <button
+              onClick={() => setActiveTab('users-balances')}
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition whitespace-nowrap ${
+                activeTab === 'users-balances'
+                  ? 'border-b-2 border-blue-500 text-blue-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Users & Balances
+            </button>
             <button
               onClick={() => setActiveTab('new-users')}
-              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition ${
+              className={`flex-1 px-6 py-4 text-sm font-medium text-center transition whitespace-nowrap ${
                 activeTab === 'new-users'
                   ? 'border-b-2 border-blue-500 text-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -303,6 +349,56 @@ function AdminDashboardContent() {
             {loading ? (
               <div className="text-center py-12">
                 <p className="text-gray-600">Loading dashboard data...</p>
+              </div>
+            ) : activeTab === 'users-balances' ? (
+              <div>
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-blue-900">System Summary</h3>
+                  <p className="text-blue-700 mt-2">
+                    Total System Balance: <span className="font-bold text-lg">${totalSystemBalance.toFixed(2)}</span>
+                  </p>
+                  <p className="text-blue-700">
+                    Active Customers: <span className="font-bold">{usersWithBalances.length}</span>
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Role</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Accounts</th>
+                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Balance</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Joined</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersWithBalances.map((user) => (
+                        <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900">{user.email}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{user.full_name || '-'}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              user.role === 'admin' 
+                                ? 'bg-purple-100 text-purple-800' 
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{user.account_count}</td>
+                          <td className="px-4 py-3 text-sm font-semibold text-right text-gray-900">
+                            ${user.total_balance.toFixed(2)}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : activeTab === 'new-users' ? (
               <>

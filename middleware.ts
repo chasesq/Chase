@@ -1,80 +1,73 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+const SESSION_COOKIE_NAME = 'chase_session_token'
+
+// Routes that require authentication
+const protectedRoutes = ['/dashboard', '/transfer', '/transactions', '/settings', '/admin']
+
+// Routes that require admin role
+const adminRoutes = ['/admin']
+
+// Auth routes (login, sign-up, etc.)
+const authRoutes = ['/auth/login', '/auth/sign-up', '/auth/forgot-password', '/auth/reset-password', '/auth/sign-up-success', '/auth/onboarding-success', '/auth/error']
+
+// Routes that redirect to /dashboard if authenticated
+const redirectAuthRoutes = ['/auth/login', '/auth/sign-up']
 
 export async function middleware(request: NextRequest) {
   try {
-    // If Supabase credentials are missing, skip middleware entirely
-    if (!supabaseUrl || !supabaseAnonKey) {
+    const pathname = request.nextUrl.pathname
+
+    // Get session token from cookies
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value
+
+    // Check if this is a protected route
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+    
+    // Check if this is an admin route
+    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route))
+    
+    // Check if this is an auth route
+    const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
+    
+    // Check if this should redirect authenticated users away
+    const shouldRedirectAuth = redirectAuthRoutes.some(route => pathname === route)
+
+    // If no token and trying to access protected route, redirect to login
+    if (isProtectedRoute && !token) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+
+    // If token exists and trying to access login/signup, redirect to dashboard
+    if (shouldRedirectAuth && token) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
+    // For admin routes, we need to validate the role
+    // Since we can't access the database directly in middleware, we'll set a header
+    // that the page can use to verify the session
+    if (isAdminRoute && token) {
+      // Add a request header with the token so the page can verify the role
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-session-token', token)
+      
       return NextResponse.next({
         request: {
-          headers: request.headers,
+          headers: requestHeaders,
         },
       })
     }
 
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    })
-
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          )
-        },
-      },
-    })
-
-    // Refresh session if it exists
-    await supabase.auth.getSession()
-
-    // Get the current session
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    const pathname = request.nextUrl.pathname
-
-    // Auth routes (login, sign-up, etc.)
-    const authRoutes = ['/auth/login', '/auth/sign-up', '/auth/forgot-password', '/auth/reset-password', '/auth/sign-up-success', '/auth/onboarding-success', '/auth/error']
-    const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
-
-    // Protected routes that require authentication
-    const protectedRoutes = ['/admin', '/settings', '/dashboard']
-    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
-
-    // Redirect unauthenticated users away from protected routes
-    if (isProtectedRoute && !session) {
+    // If admin route and no token, redirect to login
+    if (isAdminRoute && !token) {
       return NextResponse.redirect(new URL('/auth/login', request.url))
     }
 
-    // Redirect authenticated users away from auth pages (login/sign-up)
-    const redirectAuthRoutes = ['/auth/login', '/auth/sign-up']
-    const shouldRedirectAuth = redirectAuthRoutes.some(route => pathname === route)
-    if (shouldRedirectAuth && session) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-
-    return response
+    return NextResponse.next()
   } catch (error) {
-    // If anything fails in middleware, just continue to next
+    // If anything fails in middleware, just continue
     console.error('[middleware] Error:', error)
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    })
+    return NextResponse.next()
   }
 }
 
