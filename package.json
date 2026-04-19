@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "seed": "npx tsx scripts/seed-mongodb.ts"
+    "lint": "next lint"
   },
   "dependencies": {
     "@auth0/auth0-acul-js": "^1.0.0",
@@ -60,7 +59,6 @@
     "embla-carousel-react": "8.5.1",
     "hi-base32": "^0.5.1",
     "input-otp": "latest",
-    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.454.0",
     "mongodb": "^7.1.1",
     "next": "16.1.5",
