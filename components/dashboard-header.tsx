@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useBanking } from "@/lib/banking-context"
 import { useToast } from "@/hooks/use-toast"
+import { NotificationBell } from "@/components/notification-bell"
 
 export function DashboardHeader() {
   const [messagesOpen, setMessagesOpen] = useState(false)
@@ -143,19 +144,9 @@ export function DashboardHeader() {
                 </span>
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/10 relative"
-              onClick={() => setNotificationsOpen(true)}
-            >
-              <Bell className="h-5 w-5" />
-              {unreadNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
-                  {unreadNotificationCount}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center text-white hover:bg-white/10 rounded-lg transition-colors">
+              <NotificationBell />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

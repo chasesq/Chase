@@ -9,31 +9,48 @@ import { createServiceClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServiceClient()
-    const userId = request.headers.get('x-user-id')
-    const { searchParams } = new URL(request.url)
-    const unreadOnly = searchParams.get('unreadOnly') === 'true'
-    const category = searchParams.get('category')
-
-    if (!userId) {
+    
+    // Get user from Supabase session
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get user ID from Neon by email
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', session.user.email)
+      .single()
+
+    if (userError || !userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const userId = userData.id
+    const { searchParams } = new URL(request.url)
+    const unreadOnly = searchParams.get('unreadOnly') === 'true'
+    const type = searchParams.get('type')
+    const limit = Math.min(100, parseInt(searchParams.get('limit') || '20'))
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'))
+    const offset = (page - 1) * limit
+
     let query = supabase
       .from('notifications')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', userId)
 
     if (unreadOnly) {
       query = query.eq('read', false)
     }
 
-    if (category) {
-      query = query.eq('category', category)
+    if (type) {
+      query = query.eq('type', type)
     }
 
-    const { data: notifications, error } = await query
+    const { data: notifications, error, count } = await query
       .order('created_at', { ascending: false })
-      .limit(100)
+      .range(offset, offset + limit - 1)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -44,7 +61,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       notifications: notifications || [],
       unreadCount,
-      total: notifications?.length || 0
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limit),
+      },
     })
   } catch (error) {
     console.error('[v0] Notifications fetch error:', error)
@@ -59,18 +81,32 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = createServiceClient()
-    const userId = request.headers.get('x-user-id')
-    const { notificationId, markAllAsRead } = await request.json()
-
-    if (!userId) {
+    
+    // Get user from Supabase session
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Get user ID from Neon by email
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', session.user.email)
+      .single()
+
+    if (userError || !userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const userId = userData.id
+    const { notificationId, markAllAsRead } = await request.json()
 
     if (markAllAsRead) {
       // Mark all as read
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ read: true, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
 
       if (error) {
@@ -86,7 +122,7 @@ export async function PATCH(request: NextRequest) {
       // Mark specific notification as read
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ read: true, updated_at: new Date().toISOString() })
         .eq('id', notificationId)
         .eq('user_id', userId)
 
@@ -116,13 +152,27 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = createServiceClient()
-    const userId = request.headers.get('x-user-id')
-    const { searchParams } = new URL(request.url)
-    const notificationId = searchParams.get('notificationId')
-
-    if (!userId) {
+    
+    // Get user from Supabase session
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Get user ID from Neon by email
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', session.user.email)
+      .single()
+
+    if (userError || !userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const userId = userData.id
+    const { searchParams } = new URL(request.url)
+    const notificationId = searchParams.get('notificationId')
 
     if (!notificationId) {
       return NextResponse.json(
@@ -157,20 +207,32 @@ export async function DELETE(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServiceClient()
-    const userId = request.headers.get('x-user-id')
-    const {
-      emailNotifications,
-      smsNotifications,
-      pushNotifications,
-      transactionAlerts,
-      securityAlerts,
-      offerNotifications,
-      promotionalEmails,
-    } = await request.json()
-
-    if (!userId) {
+    
+    // Get user from Supabase session
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Get user ID from Neon by email
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', session.user.email)
+      .single()
+
+    if (userError || !userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const userId = userData.id
+    const {
+      transaction_alerts,
+      payment_confirmations,
+      system_messages,
+      push_notifications,
+      email_notifications,
+    } = await request.json()
 
     // Update user preferences
     const { error } = await supabase
@@ -178,13 +240,11 @@ export async function POST(request: NextRequest) {
       .upsert(
         {
           user_id: userId,
-          email_notifications: emailNotifications,
-          sms_notifications: smsNotifications,
-          push_notifications: pushNotifications,
-          transaction_alerts: transactionAlerts,
-          security_alerts: securityAlerts,
-          offer_notifications: offerNotifications,
-          promotional_emails: promotionalEmails,
+          transaction_alerts: transaction_alerts ?? true,
+          payment_confirmations: payment_confirmations ?? true,
+          system_messages: system_messages ?? true,
+          push_notifications: push_notifications ?? true,
+          email_notifications: email_notifications ?? false,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }
