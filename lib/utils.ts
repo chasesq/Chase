@@ -19,3 +19,37 @@ export function getAccountLast4(accountNumber: string): string {
 export function formatAccountNumberDisplay(accountNumber: string): string {
   return `•••• •••• •••• ${getAccountLast4(accountNumber)}`
 }
+
+// Debug logging utility - only logs in development mode
+const isDev = process.env.NODE_ENV === 'development'
+
+type LogLevel = 'log' | 'warn' | 'error' | 'info'
+
+interface DebugOptions {
+  level?: LogLevel
+  data?: unknown
+}
+
+export function debug(message: string, options?: DebugOptions): void {
+  if (!isDev) return
+  
+  const level = options?.level || 'log'
+  const prefix = '[Chase]'
+  const timestamp = new Date().toISOString().slice(11, 23)
+  
+  const formattedMessage = `${prefix} ${timestamp} ${message}`
+  
+  if (options?.data !== undefined) {
+    console[level](formattedMessage, options.data)
+  } else {
+    console[level](formattedMessage)
+  }
+}
+
+// Convenience methods for different log levels
+export const logger = {
+  log: (message: string, data?: unknown) => debug(message, { level: 'log', data }),
+  info: (message: string, data?: unknown) => debug(message, { level: 'info', data }),
+  warn: (message: string, data?: unknown) => debug(message, { level: 'warn', data }),
+  error: (message: string, data?: unknown) => debug(message, { level: 'error', data }),
+}

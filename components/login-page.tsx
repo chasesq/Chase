@@ -2469,42 +2469,60 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <div className="bg-white rounded-xl shadow-lg mx-auto w-full max-w-sm px-6 py-8">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div 
+              className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2"
+              role="alert"
+              aria-live="assertive"
+              id="login-error"
+            >
+              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
 
           {/* Username Field - underline style */}
           <div className="mb-6">
+            <label htmlFor="username" className="sr-only">Username</label>
             <input
+              id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               onKeyDown={handleKeyPress}
-              className="w-full border-b border-gray-300 py-3 px-0 text-gray-900 focus:outline-none focus:border-[#117aca] transition-colors bg-transparent placeholder-gray-500"
+              className="w-full border-b border-gray-300 py-3 px-0 text-gray-900 focus:outline-none focus:border-[#117aca] focus:ring-0 transition-colors bg-transparent placeholder-gray-500"
               placeholder="Enter your username"
               autoComplete="username"
+              aria-invalid={error && !username ? "true" : undefined}
+              aria-describedby={error ? "login-error" : undefined}
+              required
             />
           </div>
 
           {/* Password Field - underline style */}
           <div className="mb-6">
             <div className="relative">
+              <label htmlFor="password" className="sr-only">Password</label>
               <input
+                id="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={handleKeyPress}
-                className="w-full border-b border-gray-300 py-3 px-0 pr-10 text-gray-900 focus:outline-none focus:border-[#117aca] transition-colors bg-transparent placeholder-gray-500"
+                className="w-full border-b border-gray-300 py-3 px-0 pr-10 text-gray-900 focus:outline-none focus:border-[#117aca] focus:ring-0 transition-colors bg-transparent placeholder-gray-500"
                 placeholder="Enter your password"
                 autoComplete="current-password"
+                aria-invalid={error && !password ? "true" : undefined}
+                aria-describedby={error ? "login-error" : undefined}
+                required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-2 -mr-2 focus:outline-none focus:ring-2 focus:ring-[#117aca] focus:ring-offset-2 rounded"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? <EyeOff className="w-5 h-5" aria-hidden="true" /> : <Eye className="w-5 h-5" aria-hidden="true" />}
               </button>
             </div>
           </div>
@@ -2584,13 +2602,19 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           {useToken && (
             <div className="mb-6">
               <div className="relative">
+                <label htmlFor="token-code" className="sr-only">Security token code</label>
                 <input
+                  id="token-code"
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={6}
                   value={tokenCode}
                   onChange={(e) => setTokenCode(e.target.value.replace(/\D/g, ""))}
-                  className="w-full border-b border-gray-300 py-3 px-0 pr-10 text-gray-900 focus:outline-none focus:border-[#117aca] transition-colors bg-transparent placeholder-gray-500 text-center tracking-widest"
+                  className="w-full border-b border-gray-300 py-3 px-0 pr-10 text-gray-900 focus:outline-none focus:border-[#117aca] focus:ring-0 transition-colors bg-transparent placeholder-gray-500 text-center tracking-widest"
                   placeholder="Enter 6-digit code"
+                  aria-describedby="token-hint"
+                  autoComplete="one-time-code"
                 />
                 <button
                   type="button"
@@ -2626,14 +2650,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                       setIsLoading(false)
                     }
                   }}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-[#117aca] hover:text-[#0a5a9e]"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-[#117aca] hover:text-[#0a5a9e] p-2 -mr-2 focus:outline-none focus:ring-2 focus:ring-[#117aca] focus:ring-offset-2 rounded"
                   disabled={isLoading}
+                  aria-label="Resend security code to email"
                 >
-                  <Mail className="w-5 h-5" />
+                  <Mail className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1 text-center">
-                Enter the 6-digit code sent to your email • 
+              <p id="token-hint" className="text-xs text-gray-500 mt-1 text-center">
+                Enter the 6-digit code sent to your email. 
                 <button
                   onClick={async () => {
                     try {

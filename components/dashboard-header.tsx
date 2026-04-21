@@ -127,18 +127,27 @@ export function DashboardHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 chase-gradient transform-gpu backface-hidden pt-[env(safe-area-inset-top)]">
+      <header 
+        role="banner"
+        className="sticky top-0 z-50 chase-gradient transform-gpu backface-hidden pt-[env(safe-area-inset-top)]"
+      >
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" role="group" aria-label="Quick actions">
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-white/10 relative"
+              className="text-white hover:bg-white/10 relative min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a4fa6]"
               onClick={() => setMessagesOpen(true)}
+              aria-label={`Messages${unreadMessages > 0 ? `, ${unreadMessages} unread` : ''}`}
+              aria-expanded={messagesOpen}
+              aria-haspopup="dialog"
             >
-              <MessageSquare className="h-5 w-5" />
+              <MessageSquare className="h-5 w-5" aria-hidden="true" />
               {unreadMessages > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                <span 
+                  className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
+                  aria-hidden="true"
+                >
                   {unreadMessages}
                 </span>
               )}
@@ -146,12 +155,18 @@ export function DashboardHeader() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:bg-white/10 relative"
+              className="text-white hover:bg-white/10 relative min-h-[44px] min-w-[44px] focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a4fa6]"
               onClick={() => setNotificationsOpen(true)}
+              aria-label={`Notifications${unreadNotificationCount > 0 ? `, ${unreadNotificationCount} unread` : ''}`}
+              aria-expanded={notificationsOpen}
+              aria-haspopup="dialog"
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5" aria-hidden="true" />
               {unreadNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+                <span 
+                  className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center"
+                  aria-hidden="true"
+                >
                   {unreadNotificationCount}
                 </span>
               )}
@@ -166,11 +181,14 @@ export function DashboardHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-full p-0 h-10 w-10 overflow-hidden hover:ring-2 hover:ring-white/50"
+            className="rounded-full p-0 h-11 w-11 overflow-hidden hover:ring-2 hover:ring-white/50 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a4fa6]"
             onClick={() => setProfileOpen(true)}
+            aria-label={`Profile menu for ${userProfile.name || 'User'}`}
+            aria-expanded={profileOpen}
+            aria-haspopup="dialog"
           >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={userProfile.profilePicture || "/placeholder.svg"} alt={userProfile.name || ""} />
+            <Avatar className="h-11 w-11">
+              <AvatarImage src={userProfile.profilePicture || "/placeholder.svg"} alt="" />
               <AvatarFallback className="bg-white text-[#0a4fa6] font-semibold">
                 {(userProfile.name || "")
                   .split(" ")
@@ -181,15 +199,20 @@ export function DashboardHeader() {
           </Button>
         </div>
 
-        <form onSubmit={handleSearch} className="px-4 pb-3">
+        <form onSubmit={handleSearch} className="px-4 pb-3" role="search">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <label htmlFor="main-search" className="sr-only">Search transactions, payees, and more</label>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <Input
+              id="main-search"
+              type="search"
               placeholder="Search transactions, payees..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/95 border-0 h-10 rounded-full"
+              className="pl-10 bg-white/95 border-0 h-11 rounded-full focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
+              aria-describedby="search-hint"
             />
+            <span id="search-hint" className="sr-only">Press Enter to search</span>
           </div>
         </form>
       </header>
