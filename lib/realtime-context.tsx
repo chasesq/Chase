@@ -6,11 +6,42 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
+interface AccountRecord {
+  id: string
+  user_id: string
+  name: string
+  type: string
+  balance: number
+  available_balance?: number
+  account_number: string
+  routing_number: string
+}
+
+interface TransactionRecord {
+  id: string
+  user_id: string
+  description: string
+  amount: number
+  type: 'credit' | 'debit'
+  category: string
+  status: 'completed' | 'pending' | 'failed'
+  created_at: string
+}
+
+interface TransferRecord {
+  id: string
+  from_account_id: string
+  to_account_id: string
+  amount: number
+  status: string
+  created_at: string
+}
+
 interface RealtimeData {
-  accounts: Record<string, any>
-  transactions: Record<string, any>
+  accounts: Record<string, AccountRecord>
+  transactions: Record<string, TransactionRecord>
   balances: Record<string, number>
-  transfers: Record<string, any>
+  transfers: Record<string, TransferRecord>
 }
 
 interface RealtimeContextType {
@@ -18,7 +49,7 @@ interface RealtimeContextType {
   isConnected: boolean
   isLoading: boolean
   updateBalance: (accountId: string, amount: number) => Promise<void>
-  updateTransaction: (transaction: any) => Promise<void>
+  updateTransaction: (transaction: TransactionRecord) => Promise<void>
   subscribeToUpdates: (userId: string) => void
   unsubscribeFromUpdates: () => void
 }
@@ -146,7 +177,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   )
 
   const updateTransaction = useCallback(
-    async (transaction: any) => {
+    async (transaction: TransactionRecord) => {
       const supabase = supabaseRef.current
       if (!supabase) return
 

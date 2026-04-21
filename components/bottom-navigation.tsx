@@ -49,8 +49,12 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavigationP
   }, [])
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 z-50 pb-[env(safe-area-inset-bottom)] transform-gpu backface-hidden">
-      <div ref={navRef} className="relative flex items-center justify-around px-1 py-1 touch-none">
+    <nav 
+      role="navigation" 
+      aria-label="Main navigation"
+      className="fixed bottom-0 left-0 right-0 bg-card border-t border-border/50 z-50 pb-[env(safe-area-inset-bottom)] transform-gpu backface-hidden"
+    >
+      <div ref={navRef} className="relative flex items-center justify-around px-1 py-1 touch-none" role="tablist">
         {/* Sliding active indicator */}
         <div
           className={cn(
@@ -71,15 +75,32 @@ export function BottomNavigation({ activeView, onViewChange }: BottomNavigationP
             <button
               key={item.id}
               ref={(el) => setButtonRef(item.id, el)}
+              role="tab"
+              tabIndex={isActive ? 0 : -1}
               className={cn(
-                "flex flex-col items-center gap-0.5 py-2 px-3 min-w-[64px] rounded-xl transition-all duration-200 bg-transparent border-0 cursor-pointer",
+                "flex flex-col items-center gap-0.5 py-3 px-3 min-w-[64px] min-h-[48px] rounded-xl transition-all duration-200 bg-transparent border-0 cursor-pointer",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0a4fa6] focus-visible:ring-offset-2",
+                "active:scale-95 active:bg-[#0a4fa6]/10",
                 isActive
                   ? "text-[#0a4fa6]"
-                  : "text-muted-foreground active:text-[#0a4fa6]",
+                  : "text-muted-foreground hover:text-[#0a4fa6]/70",
               )}
               onClick={() => onViewChange(item.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                  e.preventDefault()
+                  const currentIndex = navItems.findIndex(i => i.id === item.id)
+                  const nextIndex = e.key === 'ArrowRight' 
+                    ? (currentIndex + 1) % navItems.length 
+                    : (currentIndex - 1 + navItems.length) % navItems.length
+                  const nextItem = navItems[nextIndex]
+                  onViewChange(nextItem.id)
+                  buttonsRef.current.get(nextItem.id)?.focus()
+                }
+              }}
               aria-label={item.label}
-              aria-current={isActive ? "page" : undefined}
+              aria-selected={isActive}
+              aria-controls={`${item.id}-panel`}
             >
               <div className={cn(
                 "transition-transform duration-200",

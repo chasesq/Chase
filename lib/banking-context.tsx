@@ -1203,9 +1203,9 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
     const userId = localStorage.getItem("chase_user_id")
     if (!userId) return
 
-    let accountsChannel: any = null
-    let notificationsChannel: any = null
-    let transactionsChannel: any = null
+    let accountsChannel: ReturnType<ReturnType<typeof import('@/lib/supabase/client').createClient>['channel']> | null = null
+    let notificationsChannel: ReturnType<ReturnType<typeof import('@/lib/supabase/client').createClient>['channel']> | null = null
+    let transactionsChannel: ReturnType<ReturnType<typeof import('@/lib/supabase/client').createClient>['channel']> | null = null
 
     const fetchSupabaseData = async () => {
       try {
@@ -1236,7 +1236,7 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
 
           // Update notifications from dashboard
           if (dashData.notifications && dashData.notifications.recent) {
-            const dbNotifs: Notification[] = dashData.notifications.recent.map((n: any) => ({
+            const dbNotifs: Notification[] = dashData.notifications.recent.map((n: { id: string; title: string; message: string; type?: string; createdAt?: string; read?: boolean; category?: string }) => ({
               id: n.id,
               title: n.title,
               message: n.message,
@@ -1317,9 +1317,10 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
               table: 'accounts',
               filter: `user_id=eq.${userId}`,
             },
-            (payload: any) => {
+            (payload: { new: { id: string; balance: string; available_balance?: string } | null; old: { id: string } | null }) => {
               console.log('[v0] Real-time account update:', payload)
               const updated = payload.new
+              if (!updated) return
               setAccounts(prev => prev.map(acc => {
                 if (acc.id === updated.id) {
                   return {
@@ -1345,14 +1346,16 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
               table: 'notifications',
               filter: `user_id=eq.${userId}`,
             },
-            (payload: any) => {
+            (payload: { new: { id: string; title: string; message: string; type?: string; created_at?: string; category?: string } | null }) => {
               console.log('[v0] Real-time notification:', payload)
               const newNotif = payload.new
+              if (!newNotif) return
+              const notifType = newNotif.type === 'credit' ? 'success' : newNotif.type === 'debit' ? 'alert' : (newNotif.type as Notification['type']) || 'info'
               const notification: Notification = {
                 id: newNotif.id,
                 title: newNotif.title,
                 message: newNotif.message,
-                type: (newNotif.type === 'credit' ? 'success' : newNotif.type === 'debit' ? 'alert' : newNotif.type) as any,
+                type: notifType,
                 date: newNotif.created_at || new Date().toISOString(),
                 read: false,
                 category: newNotif.category || 'Transactions',
@@ -1382,9 +1385,10 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
               table: 'transactions',
               filter: `user_id=eq.${userId}`,
             },
-            (payload: any) => {
+            (payload: { new: { id: string; description: string; amount: string; created_at?: string; type?: string; category?: string; status?: string; reference?: string } | null }) => {
               console.log('[v0] Real-time transaction:', payload)
               const newTx = payload.new
+              if (!newTx) return
               const transaction: Transaction = {
                 id: newTx.id,
                 description: newTx.description,
@@ -1392,7 +1396,7 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
                 date: newTx.created_at || new Date().toISOString(),
                 type: newTx.type === 'credit' || newTx.type === 'deposit' ? 'credit' : 'debit',
                 category: newTx.category || 'General',
-                status: newTx.status || 'completed',
+                status: (newTx.status as Transaction['status']) || 'completed',
                 reference: newTx.reference || '',
               }
               setTransactions(prev => [transaction, ...prev])
@@ -1449,7 +1453,7 @@ export function BankingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (settingsEnforcer) {
       const manager = new NotificationManager(
-        (type) => settingsEnforcer.shouldSendNotification(type as any),
+        (type) => settingsEnforcer.shouldSendNotification(type as "push" | "email" | "sms"),
         addNotificationInternal, // Use the internal addNotification function
       )
 

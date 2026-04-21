@@ -375,6 +375,47 @@ body.reduce-motion [data-state="closed"] {
   outline-offset: 2px;
 }
 
+/* Skip to main content link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 8px 16px;
+  z-index: 100;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* System-level reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .chase-spinner {
+    animation: none;
+  }
+  
+  .nav-indicator {
+    transition: none;
+  }
+  
+  .skeleton-shimmer {
+    animation: none;
+    background: var(--muted);
+  }
+}
+
 /* High contrast focus indicators */
 /* View Transition System - Chase-like smooth navigation */
 .view-container {

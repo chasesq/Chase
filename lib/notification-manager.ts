@@ -20,7 +20,7 @@ export class NotificationManager {
 
   constructor(
     private shouldSendNotification: (type: string) => boolean,
-    private addNotification: (notification: any) => void,
+    private addNotification: (notification: NotificationPayload) => void,
   ) {}
 
   async send(payload: NotificationPayload) {
