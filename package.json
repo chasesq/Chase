@@ -47,7 +47,7 @@
     "@stripe/stripe-js": "^9.0.1",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "latest",
-    "@vercel/analytics": "latest",
+    "@vercel/analytics": "2.0.1",
     "@vercel/functions": "^3.4.3",
     "@vercel/otel": "^2.1.0",
     "@vercel/sandbox": "latest",
