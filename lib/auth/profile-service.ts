@@ -44,7 +44,7 @@ export function getDeviceId(): string {
 
   let deviceId = localStorage.getItem(DEVICE_ID_KEY)
   if (!deviceId) {
-    deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    deviceId = `device_${crypto.randomUUID()}`
     localStorage.setItem(DEVICE_ID_KEY, deviceId)
   }
   return deviceId
