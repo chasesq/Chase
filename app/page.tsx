@@ -36,6 +36,7 @@ const DisputeTransactionDrawer = dynamic(() => import("@/components/dispute-tran
 const ViewTransition = dynamic(() => import("@/components/view-transition").then(m => ({ default: m.ViewTransition })), { ssr: false })
 const AddFundsDrawer = dynamic(() => import("@/components/add-funds-drawer").then(m => ({ default: m.AddFundsDrawer })), { ssr: false })
 const StripeDashboardDrawer = dynamic(() => import("@/components/stripe-dashboard-drawer").then(m => ({ default: m.StripeDashboardDrawer })), { ssr: false })
+const OnboardingWizard = dynamic(() => import("@/components/onboarding-wizard").then(m => ({ default: m.OnboardingWizard })), { ssr: false })
 
 type ViewId = "accounts" | "pay-transfer" | "plan-track" | "offers" | "savings-goals" | "spending-analysis" | "more"
 
@@ -44,6 +45,7 @@ export default function Page() {
   const [showSplash, setShowSplash] = useState(!isAuthenticated)
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [activeView, setActiveView] = useState<ViewId>("accounts")
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   const [sendMoneyOpen, setSendMoneyOpen] = useState(false)
   const [depositChecksOpen, setDepositChecksOpen] = useState(false)
@@ -118,6 +120,7 @@ export default function Page() {
 
     // Check if this is a new user (just signed up)
     const isNewUser = localStorage.getItem('chase_just_signed_up') === 'true'
+    const onboardingComplete = localStorage.getItem('onboarding_complete') === 'true'
     
     const welcomeTimer = setTimeout(() => {
       if (isNewUser) {
@@ -126,6 +129,10 @@ export default function Page() {
           description: "Your checking account is ready to use. Get started with zero balance.",
           duration: 4000,
         })
+        // Show onboarding wizard for new users
+        if (!onboardingComplete) {
+          setShowOnboarding(true)
+        }
         // Clear the flag after showing the welcome message
         localStorage.removeItem('chase_just_signed_up')
       } else {
@@ -401,6 +408,18 @@ export default function Page() {
 
         {/* Stripe Dashboard (Payout Reconciliation & Refunds) */}
         <StripeDashboardDrawer open={stripeDashboardOpen} onOpenChange={setStripeDashboardOpen} />
+
+        {/* Onboarding Wizard for New Users */}
+        {showOnboarding && (
+          <OnboardingWizard
+            userName={profile?.full_name?.split(" ")[0] || userProfile?.name?.split(" ")[0] || "User"}
+            balance={0}
+            onComplete={() => {
+              setShowOnboarding(false)
+              localStorage.setItem('onboarding_complete', 'true')
+            }}
+          />
+        )}
       </div>
   )
 }
