@@ -53,12 +53,19 @@ export default function AccountsPage() {
       const userEmail = localStorage.getItem('userEmail') || ''
 
       // Mock accounts data
+      const randomBytes = crypto.getRandomValues(new Uint8Array(8))
+      const randomSuffix = Array.from(randomBytes)
+        .map((b) => (b % 36).toString(36))
+        .join('')
+        .slice(0, 9)
+        .toUpperCase()
+
       const mockAccounts: Account[] = [
         {
           id: 'checking-' + userId,
           name: 'Chase Checking',
           account_type: 'checking',
-          account_number: 'ACC' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+          account_number: 'ACC' + randomSuffix,
           balance: 0,
           currency: 'USD',
           created_at: new Date().toISOString(),
