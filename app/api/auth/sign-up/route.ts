@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createUser, getUserByEmail, createAccount } from '@/lib/db'
 import { hashPassword, validatePassword, validateEmail, createUserSession } from '@/lib/auth'
 import { generateAccountNumber } from '@/lib/utils'
+import { createVerificationToken, sendVerificationEmail, generateVerificationEmailHTML } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,6 +121,31 @@ export async function POST(request: NextRequest) {
       // Continue even if account creation fails - user was created successfully
     }
 
+    // Create email verification token
+    let verificationToken = null
+    try {
+      const verificationTokenData = createVerificationToken(newUser.id, newUser.email)
+      verificationToken = verificationTokenData.token
+      
+      // Build verification link
+      const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const verificationLink = `${baseUrl}/auth/verify-email?token=${verificationToken}`
+      
+      // Generate email HTML
+      const emailHTML = generateVerificationEmailHTML(
+        newUser.full_name || 'User',
+        verificationLink
+      )
+      
+      // Send verification email
+      await sendVerificationEmail(newUser.email, newUser.full_name || 'User', verificationLink)
+      
+      console.log('[Sign-up] Verification email sent to:', newUser.email)
+    } catch (emailError) {
+      console.error('[v0] Error sending verification email:', emailError)
+      // Continue even if email sending fails - user was created successfully
+    }
+
     // Create session for auto-login
     try {
       await createUserSession(newUser.id)
@@ -145,8 +171,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'Account created successfully!',
+        message: 'Account created successfully! Check your email to verify your account.',
         user: userProfile,
+        verificationTokenSent: !!verificationToken,
       },
       { status: 201 },
     )

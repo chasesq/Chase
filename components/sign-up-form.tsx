@@ -79,6 +79,10 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         localStorage.setItem('userName', data.user.full_name || `${firstName} ${lastName}`.trim())
         // Flag to show welcome message for new users
         localStorage.setItem('chase_just_signed_up', 'true')
+        // Flag to indicate email verification was sent
+        if (data.verificationTokenSent) {
+          localStorage.setItem('email_verification_sent', 'true')
+        }
       }
 
       // Redirect to home dashboard on success (session is created server-side)
